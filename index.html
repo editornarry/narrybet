@@ -735,7 +735,48 @@ function dateFromISO(d){
   return `${p[2]}/${p[1]}/${p[0]}`;
 }
 
-// ─── STORAGE HELPERS ──────────────────────────────────────────────────────────
+// ─── GITHUB GIST SYNC ─────────────────────────────────────────────────────────
+const GIST_FILENAME = "narrybet_save.json";
+
+async function gistLoad(token, gistId){
+  const r = await fetch(`https://api.github.com/gists/${gistId}`,{
+    headers:{ Authorization:`token ${token}`, Accept:"application/vnd.github.v3+json" }
+  });
+  if(!r.ok) throw new Error(`Erro ao carregar Gist: ${r.status}`);
+  const data = await r.json();
+  const content = data.files?.[GIST_FILENAME]?.content;
+  if(!content) throw new Error("Arquivo de save não encontrado no Gist.");
+  return JSON.parse(content);
+}
+
+async function gistSave(token, gistId, payload){
+  const body = { files:{ [GIST_FILENAME]:{ content: JSON.stringify(payload) } } };
+  const r = await fetch(`https://api.github.com/gists/${gistId}`,{
+    method:"PATCH",
+    headers:{ Authorization:`token ${token}`, Accept:"application/vnd.github.v3+json", "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error(`Erro ao salvar Gist: ${r.status}`);
+  return await r.json();
+}
+
+async function gistCreate(token, payload){
+  const body = {
+    description:"NARRYBET — Save Data",
+    public: false,
+    files:{ [GIST_FILENAME]:{ content: JSON.stringify(payload) } }
+  };
+  const r = await fetch("https://api.github.com/gists",{
+    method:"POST",
+    headers:{ Authorization:`token ${token}`, Accept:"application/vnd.github.v3+json", "Content-Type":"application/json" },
+    body: JSON.stringify(body)
+  });
+  if(!r.ok) throw new Error(`Erro ao criar Gist: ${r.status}`);
+  const data = await r.json();
+  return data.id;
+}
+
+
 async function storageGet(key){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):null; }catch{ return null; } }
 function storageSet(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
 
@@ -778,6 +819,14 @@ function App(){
   const [endSeasonOpen,setEndSeasonOpen] = useState(false);
   const [myTeamDefault,setMyTeamDefault] = useState("");
 
+  // ── SYNC STATES ──
+  const [gistToken,setGistToken]   = useState("");
+  const [gistId,setGistId]         = useState("");
+  const [syncStatus,setSyncStatus] = useState("idle"); // idle | syncing | ok | error
+  const [syncMsg,setSyncMsg]       = useState("");
+  const [lastSync,setLastSync]     = useState(null);
+  const syncDebounce               = useRef(null);
+
   // ── LOAD FROM STORAGE ──
   useEffect(()=>{
     (async()=>{
@@ -794,6 +843,13 @@ function App(){
         if(d.seasonArchive) setSeasonArchive(d.seasonArchive);
         if(d.myTeamDefault) setMyTeamDefault(d.myTeamDefault);
       }
+      // Configurações de sync ficam em chave separada (não vão para o Gist)
+      const sc = await storageGet("narrybet_sync_config");
+      if(sc){
+        if(sc.gistToken) setGistToken(sc.gistToken);
+        if(sc.gistId)    setGistId(sc.gistId);
+        if(sc.lastSync)  setLastSync(sc.lastSync);
+      }
       setLoaded(true);
     })();
   },[]);
@@ -803,6 +859,20 @@ function App(){
     if(!loaded) return;
     storageSet("pes_manager_data",{balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,seasonArchive,myTeamDefault});
   },[balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,loaded,myTeamDefault]);
+
+  // ── SAVE SYNC CONFIG ──
+  useEffect(()=>{
+    if(!loaded) return;
+    storageSet("narrybet_sync_config",{gistToken,gistId,lastSync});
+  },[gistToken,gistId,lastSync,loaded]);
+
+  // ── AUTO-SYNC (debounced 4s após qualquer mudança de dado) ──
+  useEffect(()=>{
+    if(!loaded||!gistToken||!gistId) return;
+    clearTimeout(syncDebounce.current);
+    syncDebounce.current = setTimeout(()=>{ pushToGist(); },4000);
+    return ()=>clearTimeout(syncDebounce.current);
+  },[balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,seasonArchive,myTeamDefault,loaded]);
 
   // ── CHECK ACHIEVEMENTS ──
   useEffect(()=>{
@@ -827,6 +897,86 @@ function App(){
   },[openMatch,matches]);
 
   const notify=(msg,type="ok")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),3200); };
+
+  // ── GIST: montar payload completo ──
+  const buildPayload=()=>({
+    balance,matches,betHistory,pnuts,pesHistory,
+    achievements,playerName,season,seasonArchive,myTeamDefault,
+    _savedAt: new Date().toISOString(),
+  });
+
+  // ── GIST: aplicar dados recebidos no estado ──
+  const applyData=(d)=>{
+    if(d.balance!==undefined) setBalance(d.balance);
+    if(d.matches)      setMatches(d.matches);
+    if(d.betHistory)   setBetHistory(d.betHistory);
+    if(d.pnuts!==undefined) setPnuts(d.pnuts);
+    if(d.pesHistory)   setPesHistory(d.pesHistory);
+    if(d.achievements) setAchievements(d.achievements);
+    if(d.playerName)   setPlayerName(d.playerName);
+    if(d.season)       setSeason(d.season);
+    if(d.seasonArchive)setSeasonArchive(d.seasonArchive);
+    if(d.myTeamDefault)setMyTeamDefault(d.myTeamDefault);
+    // Também atualiza localStorage imediatamente
+    storageSet("pes_manager_data",d);
+  };
+
+  // ── GIST: enviar dados para a nuvem ──
+  const pushToGist=async(silent=true)=>{
+    if(!gistToken||!gistId) return;
+    if(!silent) setSyncStatus("syncing");
+    try{
+      await gistSave(gistToken, gistId, buildPayload());
+      const ts = new Date().toLocaleString("pt-BR");
+      setLastSync(ts);
+      setSyncStatus("ok");
+      setSyncMsg(`Salvo na nuvem às ${ts}`);
+      if(!silent) notify("☁️ Dados enviados para a nuvem!","ok");
+    }catch(e){
+      setSyncStatus("error");
+      setSyncMsg(e.message);
+      if(!silent) notify(`❌ Erro ao sincronizar: ${e.message}`,"err");
+    }
+  };
+
+  // ── GIST: buscar dados da nuvem ──
+  const pullFromGist=async()=>{
+    if(!gistToken||!gistId){ notify("Configure o token e o Gist ID primeiro.","err"); return; }
+    setSyncStatus("syncing");
+    try{
+      const d = await gistLoad(gistToken, gistId);
+      applyData(d);
+      const ts = new Date().toLocaleString("pt-BR");
+      setLastSync(ts);
+      setSyncStatus("ok");
+      setSyncMsg(`Carregado da nuvem às ${ts}`);
+      notify("☁️ Dados carregados da nuvem!","ok");
+    }catch(e){
+      setSyncStatus("error");
+      setSyncMsg(e.message);
+      notify(`❌ ${e.message}`,"err");
+    }
+  };
+
+  // ── GIST: criar novo Gist e salvar ──
+  const createGistAndSave=async()=>{
+    if(!gistToken){ notify("Cole o token do GitHub primeiro.","err"); return; }
+    setSyncStatus("syncing");
+    try{
+      const newId = await gistCreate(gistToken, buildPayload());
+      setGistId(newId);
+      storageSet("narrybet_sync_config",{gistToken,gistId:newId,lastSync});
+      const ts = new Date().toLocaleString("pt-BR");
+      setLastSync(ts);
+      setSyncStatus("ok");
+      setSyncMsg(`Gist criado! ID: ${newId}`);
+      notify("✅ Gist criado e dados salvos na nuvem!","ok");
+    }catch(e){
+      setSyncStatus("error");
+      setSyncMsg(e.message);
+      notify(`❌ ${e.message}`,"err");
+    }
+  };
 
   // ── ENCERRAR TEMPORADA ──
   const endSeason=(nextSeason)=>{
@@ -1323,7 +1473,12 @@ function App(){
 
         {tab==="estrelato"&&<EstrelatoTab pesHistory={pesHistory} pnuts={pnuts} pesTab={pesTab} setPesTab={setPesTab} stats={stats}/>}
         {tab==="duelos"&&<DuelosTab pesHistory={pesHistory}/>}
-        {tab==="perfil"&&<PerfilTab playerName={playerName} setPlayerName={setPlayerName} playerNameEdit={playerNameEdit} setPlayerNameEdit={setPlayerNameEdit} stats={stats} achievements={achievements} season={season} setSeason={setSeason} pnuts={pnuts} balance={balance} seasonArchive={seasonArchive}/>}
+        {tab==="perfil"&&<PerfilTab playerName={playerName} setPlayerName={setPlayerName} playerNameEdit={playerNameEdit} setPlayerNameEdit={setPlayerNameEdit} stats={stats} achievements={achievements} season={season} setSeason={setSeason} pnuts={pnuts} balance={balance} seasonArchive={seasonArchive}
+          gistToken={gistToken} setGistToken={setGistToken}
+          gistId={gistId} setGistId={setGistId}
+          syncStatus={syncStatus} syncMsg={syncMsg} lastSync={lastSync}
+          onPush={()=>pushToGist(false)} onPull={pullFromGist} onCreateGist={createGistAndSave}
+        />}
       </div>
     </div>
   );
@@ -2484,10 +2639,15 @@ function DuelosTab({pesHistory}){
 }
 
 // ─── PERFIL ───────────────────────────────────────────────────────────────────
-function PerfilTab({playerName,setPlayerName,playerNameEdit,setPlayerNameEdit,stats,achievements,season,setSeason,pnuts,balance}){
+function PerfilTab({playerName,setPlayerName,playerNameEdit,setPlayerNameEdit,stats,achievements,season,setSeason,pnuts,balance,
+  gistToken,setGistToken,gistId,setGistId,syncStatus,syncMsg,lastSync,onPush,onPull,onCreateGist}){
   const [nameInput,setNameInput]=useState(playerName);
+  const [showToken,setShowToken]=useState(false);
   const unlockedIds=new Set(achievements);
   const winRate=stats.totalMatches>0?Math.round(stats.wins/stats.totalMatches*100):0;
+
+  const syncColor = syncStatus==="ok"?C.green : syncStatus==="error"?C.accent : syncStatus==="syncing"?C.blue : C.textSoft;
+  const syncIcon  = syncStatus==="ok"?"✅" : syncStatus==="error"?"❌" : syncStatus==="syncing"?"⏳" : "☁️";
 
   return(
     <div>
@@ -2517,6 +2677,99 @@ function PerfilTab({playerName,setPlayerName,playerNameEdit,setPlayerNameEdit,st
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ── PAINEL DE SINCRONIZAÇÃO ── */}
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:20,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",marginBottom:22}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,flexWrap:"wrap",gap:8}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue}}>☁️ SYNC — PC &amp; CELULAR</div>
+          {syncStatus!=="idle"&&(
+            <div style={{display:"flex",alignItems:"center",gap:6,fontSize:"0.75rem",color:syncColor,fontWeight:700,background:`${syncColor}18`,border:`1px solid ${syncColor}44`,borderRadius:20,padding:"4px 12px"}}>
+              <span>{syncIcon}</span>
+              <span>{syncStatus==="syncing"?"Sincronizando...":syncStatus==="ok"?"Sincronizado":syncStatus==="error"?"Erro":"—"}</span>
+            </div>
+          )}
+        </div>
+
+        {lastSync&&(
+          <div style={{fontSize:"0.72rem",color:C.textSoft,marginBottom:14,display:"flex",alignItems:"center",gap:5}}>
+            <span>🕐</span><span>Última sincronização: <strong>{lastSync}</strong></span>
+          </div>
+        )}
+        {syncMsg&&syncStatus==="error"&&(
+          <div style={{background:C.liveL,border:`1px solid ${C.accent}44`,borderRadius:8,padding:"8px 12px",fontSize:"0.75rem",color:C.accent,marginBottom:12}}>{syncMsg}</div>
+        )}
+
+        {/* Instruções se não configurado */}
+        {!gistId&&(
+          <div style={{background:"rgba(14,165,233,0.07)",border:"1px solid rgba(14,165,233,0.18)",borderRadius:10,padding:"12px 14px",marginBottom:14,fontSize:"0.78rem",color:C.textMid,lineHeight:1.75}}>
+            <strong style={{color:C.blue,display:"block",marginBottom:4}}>Como configurar (1 vez só):</strong>
+            <strong>1.</strong> Acesse <a href="https://github.com/settings/tokens/new?scopes=gist&description=NARRYBET" target="_blank" rel="noreferrer" style={{color:C.blue,fontWeight:700}}>github.com/settings/tokens</a>, crie um token com escopo <code style={{background:"rgba(14,165,233,0.12)",padding:"1px 6px",borderRadius:4,fontFamily:"monospace"}}>gist</code>.<br/>
+            <strong>2.</strong> Cole o token abaixo e clique <strong>Criar Gist</strong>. Um Gist secreto e privado será criado.<br/>
+            <strong>3.</strong> Anote o <strong>Gist ID</strong> gerado. No outro dispositivo, cole o mesmo token + ID e clique <strong>Carregar da Nuvem</strong>.
+          </div>
+        )}
+
+        {/* Campos */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+          <div>
+            <label style={lbl_s}>GitHub Token</label>
+            <div style={{display:"flex",gap:8}}>
+              <input
+                type={showToken?"text":"password"}
+                value={gistToken}
+                onChange={e=>setGistToken(e.target.value.trim())}
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                style={{...inp_s,flex:1,fontFamily:"monospace",fontSize:"0.82rem"}}
+              />
+              <button onClick={()=>setShowToken(s=>!s)} style={{background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",color:C.textSoft,borderRadius:8,padding:"9px 12px",flexShrink:0}}>{showToken?"🙈":"👁️"}</button>
+            </div>
+          </div>
+          <div>
+            <label style={lbl_s}>
+              Gist ID
+              {!gistId&&<span style={{color:C.textSoft,fontWeight:400,letterSpacing:0,textTransform:"none",marginLeft:4}}>(gerado ao criar)</span>}
+            </label>
+            <input
+              type="text"
+              value={gistId}
+              onChange={e=>setGistId(e.target.value.trim())}
+              placeholder="Cole aqui se já tem um Gist"
+              style={{...inp_s,fontFamily:"monospace",fontSize:"0.82rem"}}
+            />
+            {gistId&&(
+              <div style={{fontSize:"0.68rem",color:C.textSoft,marginTop:4,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                <a href={`https://gist.github.com/${gistId}`} target="_blank" rel="noreferrer" style={{color:C.blue}}>🔗 Ver no GitHub</a>
+                <button onClick={()=>{navigator.clipboard?.writeText(gistId);}} style={{background:"none",border:"none",color:C.blue,fontSize:"0.68rem",cursor:"pointer",textDecoration:"underline",padding:0}}>📋 Copiar ID</button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Botões */}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {!gistId?(
+            <button onClick={onCreateGist} disabled={!gistToken||syncStatus==="syncing"} style={{flex:1,background:gistToken?`linear-gradient(135deg,${C.blue},${C.blueM})`:"#e2e8f0",border:"none",color:gistToken?"#fff":C.textSoft,borderRadius:10,padding:"12px",fontWeight:800,fontSize:"0.9rem",boxShadow:gistToken?"0 4px 16px rgba(14,165,233,0.3)":"none"}}>
+              {syncStatus==="syncing"?"⏳ Criando...":"✨ Criar Gist e Salvar"}
+            </button>
+          ):(
+            <>
+              <button onClick={onPull} disabled={syncStatus==="syncing"} style={{flex:1,background:"linear-gradient(135deg,#7c3aed,#8b5cf6)",border:"none",color:"#fff",borderRadius:10,padding:"12px",fontWeight:800,fontSize:"0.85rem",boxShadow:"0 4px 16px rgba(124,58,237,0.25)",minWidth:130}}>
+                {syncStatus==="syncing"?"⏳":"📥"} Carregar da Nuvem
+              </button>
+              <button onClick={onPush} disabled={syncStatus==="syncing"} style={{flex:1,background:`linear-gradient(135deg,${C.blue},${C.blueM})`,border:"none",color:"#fff",borderRadius:10,padding:"12px",fontWeight:800,fontSize:"0.85rem",boxShadow:"0 4px 16px rgba(14,165,233,0.25)",minWidth:130}}>
+                {syncStatus==="syncing"?"⏳":"📤"} Enviar para Nuvem
+              </button>
+            </>
+          )}
+        </div>
+
+        {gistId&&(
+          <div style={{marginTop:12,fontSize:"0.72rem",color:C.textSoft,lineHeight:1.65,background:"rgba(14,165,233,0.05)",borderRadius:8,padding:"8px 12px"}}>
+            💡 <strong>Auto-sync ativo</strong> — dados enviados automaticamente ~4s após cada alteração. Ao abrir em outro dispositivo, clique <strong>Carregar da Nuvem</strong> para buscar o progresso mais recente.
+          </div>
+        )}
       </div>
 
       {/* Stats detalhadas */}

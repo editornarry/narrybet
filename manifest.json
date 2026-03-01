@@ -2,7 +2,7 @@
   "name": "NARRYBET",
   "short_name": "NARRYBET",
   "description": "Casa de apostas pessoal + PES 13 Rumo ao Estrelato",
-  "start_url": "/",
+  "start_url": "/narrybet/",
   "display": "standalone",
   "background_color": "#0369a1",
   "theme_color": "#0284c7",

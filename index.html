@@ -792,6 +792,7 @@ function App(){
   const [newM,setNewM]               = useState({myTeam:"",opponent:"",competition:"Campeonato Nacional",isFinal:false,isNational:false,matchDate:"",players:[]});
   const [dateDisplay,setDateDisplay] = useState("");
   const [openMatch,setOpenMatch]     = useState(null);
+  const [matchSummary,setMatchSummary] = useState(null); // modal resumo pós-jogo
   const [liveMinute,setLiveMinute]   = useState(0);
   const [goalAnim,setGoalAnim]       = useState(false);
   const [confetti,setConfetti]       = useState([]);
@@ -1100,6 +1101,18 @@ function App(){
     }));
   };
 
+  // ── AJUSTE MANUAL DE PLACAR ──
+  const adjustScore=(matchId, side, delta)=>{
+    setMatches(ms=>ms.map(m=>{
+      if(m.id!==matchId) return m;
+      const score={...m.score};
+      if(side==="my")  score.my  = Math.max(0, score.my  + delta);
+      if(side==="adv") score.adv = Math.max(0, score.adv + delta);
+      return {...m, score};
+    }));
+    if(delta>0 && side==="my") triggerGoalAnim();
+  };
+
   const finishMatch=(matchId)=>{
     setMatches(ms=>ms.map(m=>{
       if(m.id!==matchId) return m;
@@ -1113,6 +1126,8 @@ function App(){
       const summ=buildSummary(m.events,m.isNational,m.isFinal,isWin);
       summ.cardDebt=pnutResult.cardDebt;
       summ.debtCleared=pnutResult.debtCleared;
+      // Apostas desta partida
+      const matchBets=[...m.preBets,...betSlip.filter(b=>b.matchId===matchId)];
       setPesHistory(ph=>[{
         id:Date.now(),matchId,myTeam:m.myTeam,opponent:m.opponent,
         competition:m.competition,isFinal:m.isFinal,isNational:m.isNational,
@@ -1122,14 +1137,16 @@ function App(){
         cardDebt:pnutResult.cardDebt,debtCleared:pnutResult.debtCleared,
         date:new Date().toLocaleString("pt-BR"),summary:summ
       },...ph]);
-      let msg = `Encerrado! +${total}🥜`;
-      if(syn>0) msg+=` (incl. +${syn} sinergia)`;
-      if(pnutResult.cardDebt>0 && !pnutResult.debtCleared) msg+=` | ⚠️ -${pnutResult.cardDebt}🥜 cartão`;
-      if(pnutResult.debtCleared) msg+=` | ✅ Dívida de cartão quitada pelo gol!`;
-      notify(msg, "ok");
+      // Montar dados para modal de resumo
+      setMatchSummary({
+        match:m, isWin, isDraw, pnutsEarned:total,
+        pnutsBase:earned, synergyBonus:syn,
+        cardDebt:pnutResult.cardDebt, debtCleared:pnutResult.debtCleared,
+        summary:summ, bets:matchBets,
+      });
+      setOpenMatch(null);
       return{...m,status:"finished",isWin,isDraw,pnutsEarned:total,synergyBonus:syn};
     }));
-    setOpenMatch(null);
   };
 
   function buildSummary(events,isNat,isFin,isWin){
@@ -1447,6 +1464,9 @@ function App(){
         </button>
       </Modal>}
 
+      {/* Modal de resumo pós-partida */}
+      {matchSummary&&<MatchSummaryModal data={matchSummary} balance={balance} onClose={()=>setMatchSummary(null)}/>}
+
       <div className="main-content" style={{maxWidth:1440,margin:"0 auto",padding:"22px 16px",position:"relative",zIndex:1}}>
         {tab==="dashboard"&&<Dashboard matches={matches} pesHistory={pesHistory} pnuts={pnuts} balance={balance} stats={stats} achievements={achievements} season={season} setSeason={setSeason} playerName={playerName} seasonArchive={seasonArchive}/>}
 
@@ -1459,6 +1479,7 @@ function App(){
               isBet={isBet} toggleBet={toggleBet} totalOdd={totalOdd} potential={potential} stakeVal={stakeVal}
               balance={balance} startMatch={startMatch} addEvent={addEvent}
               removeLastEvent={removeLastEvent} finishMatch={finishMatch}
+              adjustScore={adjustScore}
               onBack={()=>setOpenMatch(null)} goalAnim={goalAnim}
             />
           ):(
@@ -1832,8 +1853,156 @@ function MatchSummaryCard({match:m,onClick}){
   );
 }
 
+// ─── MATCH SUMMARY MODAL (pós-partida) ───────────────────────────────────────
+function MatchSummaryModal({data, balance, onClose}){
+  const {match:m, isWin, isDraw, pnutsEarned, pnutsBase, synergyBonus, cardDebt, debtCleared, summary:s, bets} = data;
+  const resultColor = isWin ? C.green : isDraw ? C.gold : C.accent;
+  const resultLabel = isWin ? "VITÓRIA" : isDraw ? "EMPATE" : "DERROTA";
+  const resultEmoji = isWin ? "🏆" : isDraw ? "🤝" : "💔";
+
+  // Calcular resultado das apostas
+  const hasBets = bets && bets.length > 0;
+  const betWon  = hasBets && isWin && bets.some(b=>b.label?.includes(m.myTeam)||b.key?.includes("home_win"));
+
+  // Listar eventos da partida de forma legível
+  const eventGroups = [];
+  const evDefs = [
+    {type:"goal",       icon:"⚽", label:"Gol (pé)"      },
+    {type:"goal_left",  icon:"🦶", label:"Gol pé esq."   },
+    {type:"goal_right", icon:"👟", label:"Gol pé dir."   },
+    {type:"goal_head",  icon:"🗣️", label:"Gol de cabeça" },
+    {type:"goal_outside",icon:"🌟",label:"Gol fora da área"},
+    {type:"goal_lob",   icon:"🎩", label:"Gol cobertura" },
+    {type:"goal_post",  icon:"🔔", label:"Gol no travessão"},
+    {type:"fk_goal",    icon:"🎯", label:"Gol de falta"  },
+    {type:"corner_goal",icon:"🚩", label:"Gol escanteio" },
+    {type:"assist",     icon:"🅰️", label:"Assistência"   },
+    {type:"adv_goal",   icon:"🔴", label:"Gol adversário"},
+    {type:"yellow",     icon:"🟡", label:"Cartão amarelo"},
+    {type:"red",        icon:"🟥", label:"Cartão vermelho"},
+  ];
+  for(const ev of evDefs){
+    const evts = m.events.filter(e=>e.type===ev.type);
+    if(evts.length>0) eventGroups.push({...ev, events:evts});
+  }
+
+  const totalGoals = (s.goals||0)+(s.goalLeft||0)+(s.goalRight||0)+(s.goalHead||0)+(s.goalOutside||0)+(s.goalLob||0)+(s.goalPost||0)+(s.fkGoals||0)+(s.cornerGoals||0);
+
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",backdropFilter:"blur(4px)"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:520,maxHeight:"90vh",overflowY:"auto",boxShadow:"0 24px 60px rgba(0,0,0,0.3)"}}>
+
+        {/* HEADER RESULTADO */}
+        <div style={{background:`linear-gradient(135deg,${resultColor},${resultColor}cc)`,borderRadius:"20px 20px 0 0",padding:"24px 24px 20px",textAlign:"center",color:"#fff",position:"relative"}}>
+          <div style={{fontSize:"3rem",marginBottom:4}}>{resultEmoji}</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",letterSpacing:4,fontWeight:900}}>{resultLabel}</div>
+          <div style={{fontSize:"0.9rem",opacity:0.85,marginTop:4}}>{m.myTeam} vs {m.opponent}</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.8rem",letterSpacing:4,marginTop:12,fontWeight:900,lineHeight:1}}>{m.score.my} – {m.score.adv}</div>
+          <div style={{fontSize:"0.75rem",opacity:0.7,marginTop:6}}>{m.competition}{m.matchDate?` · ${new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR")}`:""}</div>
+          <button onClick={onClose} style={{position:"absolute",top:14,right:16,background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 12px",fontSize:"0.8rem",fontWeight:700}}>✕ Fechar</button>
+        </div>
+
+        <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:16}}>
+
+          {/* AMENDOINS */}
+          <div style={{background:C.goldL,border:"1px solid #fde68a",borderRadius:14,padding:"16px 18px"}}>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.85rem",letterSpacing:2,color:"#92400e",marginBottom:10}}>🥜 AMENDOINS GANHOS</div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",marginBottom:12}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"3rem",color:C.gold,letterSpacing:2,lineHeight:1}}>+{pnutsEarned}</div>
+              <div style={{fontSize:"2rem",marginLeft:6}}>🥜</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:5,fontSize:"0.78rem"}}>
+              {pnutsBase>0&&<div style={{display:"flex",justifyContent:"space-between",color:"#92400e"}}>
+                <span>Base (eventos)</span><strong>+{pnutsBase}🥜</strong>
+              </div>}
+              {synergyBonus>0&&<div style={{display:"flex",justifyContent:"space-between",color:"#7c3aed"}}>
+                <span>⭐ Bônus sinergia</span><strong>+{synergyBonus}🥜</strong>
+              </div>}
+              {cardDebt>0&&!debtCleared&&<div style={{display:"flex",justifyContent:"space-between",color:C.accent}}>
+                <span>⚠️ Penalidade cartão</span><strong>−{cardDebt}🥜</strong>
+              </div>}
+              {debtCleared&&<div style={{display:"flex",justifyContent:"space-between",color:C.green}}>
+                <span>✅ Dívida quitada pelo gol!</span><strong>0🥜</strong>
+              </div>}
+              {s.hatTrick&&<div style={{textAlign:"center",marginTop:4,background:"rgba(239,68,68,0.08)",borderRadius:8,padding:"4px",color:C.accent,fontWeight:700,fontSize:"0.8rem"}}>🔥 HAT-TRICK!</div>}
+            </div>
+          </div>
+
+          {/* LINHA DO TEMPO DE EVENTOS */}
+          {eventGroups.length>0&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"14px 16px"}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.85rem",letterSpacing:2,color:C.blue,marginBottom:12}}>📋 SEUS EVENTOS</div>
+              <div style={{display:"flex",flexDirection:"column",gap:0}}>
+                {m.events.map((ev,i)=>{
+                  const def = evDefs.find(x=>x.type===ev.type)||{icon:"•",label:ev.type};
+                  const isMyAction = ev.type!=="adv_goal";
+                  return(
+                    <div key={ev.id||i} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 10px",borderBottom:i<m.events.length-1?`1px solid ${C.border}`:"none",background:i%2===0?"transparent":"rgba(14,165,233,0.03)"}}>
+                      <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.82rem",color:C.textSoft,minWidth:32}}>{ev.minute}'</span>
+                      <span style={{fontSize:"1.1rem"}}>{def.icon}</span>
+                      <span style={{fontSize:"0.84rem",fontWeight:600,color:isMyAction?C.text:C.accent,flex:1}}>{def.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* APOSTAS */}
+          {hasBets&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"14px 16px"}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.85rem",letterSpacing:2,color:C.blue,marginBottom:12}}>🎲 APOSTAS PRÉ-JOGO</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {bets.map((b,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:"rgba(14,165,233,0.06)",borderRadius:8}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"0.75rem",color:C.textSoft}}>{b.market}</div>
+                      <div style={{fontSize:"0.85rem",fontWeight:600}}>{b.label}</div>
+                    </div>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",color:C.blue,fontSize:"1rem"}}>{b.odd}x</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{marginTop:10,fontSize:"0.75rem",color:C.textSoft,textAlign:"center",background:"rgba(14,165,233,0.06)",borderRadius:8,padding:"8px"}}>
+                💡 Acesse o histórico de apostas para confirmar ganhos/perdas manualmente
+              </div>
+            </div>
+          )}
+
+          {/* BALANÇO GERAL */}
+          <div style={{background:"rgba(14,165,233,0.06)",border:`1px solid ${C.border}`,borderRadius:14,padding:"14px 16px"}}>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.85rem",letterSpacing:2,color:C.blue,marginBottom:10}}>📊 BALANÇO DA PARTIDA</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+              {[
+                {icon:"⚽",label:"Meus gols",val:totalGoals,col:C.green},
+                {icon:"🅰️",label:"Assistências",val:s.assists||0,col:C.accentO},
+                {icon:"🟡",label:"Amarelos",val:s.yellows||0,col:C.gold},
+                {icon:"🟥",label:"Vermelhos",val:s.reds||0,col:C.accent},
+                {icon:"🔴",label:"Gols sofridos",val:s.advGoals||0,col:C.accent},
+                {icon:"🥜",label:"Amendoins",val:`+${pnutsEarned}`,col:C.gold},
+              ].map(item=>(
+                <div key={item.label} style={{display:"flex",alignItems:"center",gap:8,background:"#fff",borderRadius:10,padding:"10px 12px"}}>
+                  <span style={{fontSize:"1.2rem"}}>{item.icon}</span>
+                  <div>
+                    <div style={{fontSize:"0.65rem",color:C.textSoft,fontWeight:700}}>{item.label.toUpperCase()}</div>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",color:item.col,letterSpacing:1,lineHeight:1}}>{item.val}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={onClose} style={{width:"100%",background:`linear-gradient(135deg,${resultColor},${resultColor}bb)`,border:"none",color:"#fff",borderRadius:12,padding:"14px",fontWeight:800,fontSize:"1rem",boxShadow:`0 4px 16px ${resultColor}44`}}>
+            Continuar →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── MATCH DETAIL ─────────────────────────────────────────────────────────────
-function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setStakeInput,marketTab,setMarketTab,isBet,toggleBet,totalOdd,potential,stakeVal,balance,startMatch,addEvent,removeLastEvent,finishMatch,onBack,goalAnim}){
+function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setStakeInput,marketTab,setMarketTab,isBet,toggleBet,totalOdd,potential,stakeVal,balance,startMatch,addEvent,removeLastEvent,finishMatch,adjustScore,onBack,goalAnim}){
   const [confirmFinish,setConfirmFinish]=useState(false);
   const markets=Object.keys(m.odds);
   const isLive=m.status==="live";
@@ -2045,15 +2214,37 @@ function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setSta
           {isLive&&(
             <div style={{background:"rgba(255,255,255,0.65)",border:`2px solid ${C.live}`,borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
               <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",letterSpacing:3,color:C.live,marginBottom:12}}>⚡ PLACAR AO VIVO</div>
-              <div style={{background:C.liveL,borderRadius:10,padding:"14px",textAlign:"center",marginBottom:14}}>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.5rem",color:C.live,letterSpacing:3,lineHeight:1}}>{m.score.my}–{m.score.adv}</div>
-                <div style={{fontSize:"0.7rem",color:C.live,fontWeight:600,marginTop:4}}>{liveMinute}'</div>
+
+              {/* Controles manuais de placar */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center",marginBottom:14}}>
+                {/* Meu time */}
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                  <div style={{fontSize:"0.65rem",color:C.textSoft,fontWeight:700,textAlign:"center",letterSpacing:1}}>MEU TIME</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <button onClick={()=>adjustScore(m.id,"my",-1)} style={{width:32,height:32,borderRadius:8,background:"rgba(239,68,68,0.1)",border:`1px solid ${C.accent}44`,color:C.accent,fontSize:"1.2rem",fontWeight:700,lineHeight:1}}>−</button>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.4rem",color:C.live,letterSpacing:2,minWidth:36,textAlign:"center",lineHeight:1}}>{m.score.my}</div>
+                    <button onClick={()=>adjustScore(m.id,"my",+1)} style={{width:32,height:32,borderRadius:8,background:"rgba(34,197,94,0.12)",border:`1px solid ${C.green}44`,color:C.green,fontSize:"1.2rem",fontWeight:700,lineHeight:1}}>+</button>
+                  </div>
+                </div>
+                {/* Separador */}
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:C.textSoft,textAlign:"center",lineHeight:1,paddingBottom:4}}>–</div>
+                {/* Adversário */}
+                <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+                  <div style={{fontSize:"0.65rem",color:C.textSoft,fontWeight:700,textAlign:"center",letterSpacing:1}}>ADVERSÁRIO</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <button onClick={()=>adjustScore(m.id,"adv",-1)} style={{width:32,height:32,borderRadius:8,background:"rgba(239,68,68,0.1)",border:`1px solid ${C.accent}44`,color:C.accent,fontSize:"1.2rem",fontWeight:700,lineHeight:1}}>−</button>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.4rem",color:C.live,letterSpacing:2,minWidth:36,textAlign:"center",lineHeight:1}}>{m.score.adv}</div>
+                    <button onClick={()=>adjustScore(m.id,"adv",+1)} style={{width:32,height:32,borderRadius:8,background:"rgba(34,197,94,0.12)",border:`1px solid ${C.green}44`,color:C.green,fontSize:"1.2rem",fontWeight:700,lineHeight:1}}>+</button>
+                  </div>
+                </div>
               </div>
-              <div style={{fontSize:"0.76rem",color:C.textMid,marginBottom:14}}>
+              <div style={{fontSize:"0.65rem",color:C.textSoft,textAlign:"center",marginBottom:14,fontStyle:"italic"}}>Use + e − para ajustar gols do time que não foram seus</div>
+
+              <div style={{fontSize:"0.76rem",color:C.textMid,marginBottom:14,background:"rgba(14,165,233,0.06)",borderRadius:8,padding:"10px 12px"}}>
                 {[
                   ["Meus gols:",myGoals,C.green],
                   ["Assistências:",m.events.filter(e=>e.type==="assist").length,C.accentO],
-                  ["Amendoins est.:",`~${calcPnuts(m.events,m.isNational,m.isFinal,m.score.my>m.score.adv)}🥜`,C.gold],
+                  ["Amendoins est.:",`~${calcPnuts(m.events,m.isNational,m.isFinal,m.score.my>m.score.adv).total}🥜`,C.gold],
                 ].map(([l,v,c])=>(
                   <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span>{l}</span><strong style={{color:c}}>{v}</strong>

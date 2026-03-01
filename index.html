@@ -57,11 +57,16 @@
        MOBILE RESPONSIVE — NARRYBET
        ═══════════════════════════════════════ */
 
+    /* Prevenção global de overflow */
+    *{ box-sizing:border-box; }
+    img,svg,video{ max-width:100%; }
+    input,select,button{ max-width:100%; }
+
     /* Bottom nav bar (mobile only) */
     .bottom-nav{
       display:none;
       position:fixed;bottom:0;left:0;right:0;
-      background:rgba(2,100,180,0.88);
+      background:rgba(2,100,180,0.95);
       backdrop-filter:blur(24px) saturate(1.8);
       -webkit-backdrop-filter:blur(24px) saturate(1.8);
       border-top:1px solid rgba(255,255,255,0.28);
@@ -77,7 +82,7 @@
     .bn-btn{
       display:flex;flex-direction:column;align-items:center;gap:2px;
       background:none;border:none;color:rgba(186,230,253,0.7);
-      padding:4px 8px;border-radius:10px;min-width:52px;
+      padding:6px 8px;border-radius:10px;min-width:52px;
       transition:all 0.18s;font-family:'Nunito',sans-serif;
     }
     .bn-btn.active{
@@ -86,8 +91,8 @@
       border:1px solid rgba(255,255,255,0.28);
       box-shadow:0 2px 8px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.25) inset;
     }
-    .bn-btn .bn-icon{ font-size:1.25rem;line-height:1; }
-    .bn-btn .bn-label{ font-size:0.58rem;font-weight:800;letter-spacing:0.5px;white-space:nowrap; }
+    .bn-btn .bn-icon{ font-size:1.3rem;line-height:1; }
+    .bn-btn .bn-label{ font-size:0.6rem;font-weight:800;letter-spacing:0.5px;white-space:nowrap; }
 
     /* Main content padding for bottom nav */
     .main-content{ padding-bottom:0; }
@@ -97,39 +102,45 @@
       .desktop-nav{ display:none !important; }
       .desktop-stats{ display:none !important; }
       .header-logo-text .season-line{ display:none; }
-      .main-content{ padding-bottom:72px !important; }
+      .main-content{
+        padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important;
+        padding-left:12px !important;
+        padding-right:12px !important;
+        padding-top:14px !important;
+      }
 
       /* Header compacto */
       .narry-header{
         height:54px !important;
-        padding:0 14px !important;
+        padding:0 12px !important;
       }
       .narry-logo-ball{
         width:34px !important;height:34px !important;font-size:1.1rem !important;
       }
       .narry-logo-title{
-        font-size:1.1rem !important;letter-spacing:2px !important;
+        font-size:1.05rem !important;letter-spacing:2px !important;
       }
 
       /* Stats pill no header mobile */
       .mobile-header-stats{
         display:flex !important;
-        align-items:center;gap:6px;
+        align-items:center;gap:5px;
         margin-left:auto;
+        flex-shrink:0;
       }
       .mobile-stat-pill{
         background:rgba(255,255,255,0.15);
         border:1px solid rgba(255,255,255,0.22);
-        border-radius:20px;padding:3px 10px;
-        display:flex;align-items:center;gap:4px;
+        border-radius:20px;padding:3px 8px;
+        display:flex;align-items:center;gap:3px;
         backdrop-filter:blur(8px);
       }
       .mobile-stat-pill .msp-val{
-        font-family:'Orbitron',sans-serif;font-size:0.75rem;
+        font-family:'Orbitron',sans-serif;font-size:0.7rem;
         color:#fff;font-weight:700;letter-spacing:0.5px;
       }
 
-      /* Grid adaptations */
+      /* ── GRID COLLAPSES ── */
       .match-detail-grid{
         grid-template-columns:1fr !important;
       }
@@ -139,12 +150,160 @@
       .stats-grid{
         grid-template-columns:1fr !important;
       }
+      /* Apostas tab: remover sidebar */
+      .apostas-layout{
+        grid-template-columns:1fr !important;
+      }
+      .apostas-sidebar{
+        display:none !important;
+      }
+      /* Dashboard grids */
+      .dash-two-col{
+        grid-template-columns:1fr !important;
+      }
+
+      /* ── SCOREBOARD MOBILE ── */
+      .scoreboard-teams{
+        gap:8px !important;
+      }
+      .scoreboard-team-name{
+        font-size:1rem !important;
+        word-break:break-word;
+      }
+      .scoreboard-score{
+        padding:8px 16px !important;
+        min-width:80px !important;
+      }
+      .scoreboard-score-number{
+        font-size:2.2rem !important;
+      }
+
+      /* ── RULES TABLE MOBILE ── */
+      .rules-row{
+        grid-template-columns:auto 1fr auto !important;
+      }
+      .rules-col-nacional{
+        display:none !important;
+      }
+      .rules-header-nacional{
+        display:none !important;
+      }
+      .rules-val{
+        min-width:0 !important;
+        white-space:normal !important;
+        font-size:0.8rem !important;
+      }
+      .rules-label{
+        font-size:0.78rem !important;
+      }
+
+      /* ── MATCH HISTORY CARD ── */
+      .match-hist-card{
+        flex-wrap:wrap !important;
+        gap:6px !important;
+      }
+      .match-hist-score{
+        font-size:1rem !important;
+      }
+
+      /* ── PERFIL CARD ── */
+      .perfil-card{
+        flex-direction:column !important;
+        align-items:flex-start !important;
+        padding:20px !important;
+        gap:14px !important;
+      }
+      .perfil-name{
+        font-size:1.4rem !important;
+        letter-spacing:2px !important;
+        word-break:break-all;
+      }
+      .perfil-stats-row{
+        gap:10px !important;
+      }
+
+      /* ── DUELOS DETALHE ── */
+      .duelo-header-score{
+        font-size:2rem !important;
+      }
+      .duelo-stats-grid{
+        grid-template-columns:1fr 1fr !important;
+      }
+
+      /* ── EVENTO BUTTONS ── */
+      .event-grid{
+        grid-template-columns:repeat(3,1fr) !important;
+      }
+      .event-btn-icon{
+        font-size:1.3rem !important;
+      }
+      .event-btn-label{
+        font-size:0.65rem !important;
+      }
+
+      /* ── MODAL ── */
+      .modal-inner{
+        padding:18px !important;
+        border-radius:16px !important;
+      }
+      .modal-title{
+        font-size:0.95rem !important;
+        letter-spacing:2px !important;
+      }
+
+      /* ── BREADCRUMB ── */
+      .breadcrumb-match-name{
+        display:none;
+      }
+
+      /* ── BET CARD ── */
+      .bet-card-footer{
+        flex-direction:column !important;
+        align-items:flex-start !important;
+        gap:8px !important;
+      }
+
+      /* ── MATCH SUMMARY CARD chips ── */
+      .match-card-chips{
+        flex-wrap:wrap !important;
+      }
+      .match-card-body{
+        flex-wrap:wrap !important;
+        gap:6px !important;
+      }
+
+      /* ── FORMA CHART ── */
+      .forma-resumo-grid{
+        grid-template-columns:1fr 1fr !important;
+      }
+
+      /* ── OBJECTIVES ── */
+      .obj-grid{
+        grid-template-columns:1fr !important;
+      }
+
+      /* ── KPI GRID ── */
+      .kpi-grid{
+        grid-template-columns:repeat(2,1fr) !important;
+      }
+
+      /* ── SEASON ARCHIVE ── */
+      .season-arc-row{
+        flex-direction:column !important;
+        gap:6px !important;
+        align-items:flex-start !important;
+      }
     }
 
     @media (max-width: 400px){
-      .narry-logo-title{ font-size:0.95rem !important; }
-      .bn-label{ display:none; }
-      .bn-btn{ min-width:40px; }
+      .narry-logo-title{ font-size:0.88rem !important; }
+      .bn-label{ font-size:0.55rem; }
+      .bn-btn{ min-width:40px;padding:4px 4px; }
+      .mobile-stat-pill{ display:none; }
+      .mobile-stat-pill:first-child{ display:flex !important; }
+      .event-grid{
+        grid-template-columns:repeat(3,1fr) !important;
+      }
     }
 
     @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
@@ -199,6 +358,9 @@ const css_vars = `
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Exo+2:wght@400;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
 
+  /* Overflow prevention */
+  html,body{ overflow-x:hidden; max-width:100vw; }
+  img,svg{ max-width:100%; }
   /* ── Frutiger Aero scrollbar ── */
   ::-webkit-scrollbar{width:6px;height:6px;}
   ::-webkit-scrollbar-track{background:rgba(14,165,233,0.08);border-radius:6px;}
@@ -263,6 +425,13 @@ const css_vars = `
   .goal-pop{animation:goalPop 0.5s ease;}
   .goal-flash{animation:goalFlash 0.7s ease;}
   .float{animation:float 3s ease-in-out infinite;}
+
+  /* Mobile overrides via css_vars */
+  @media (max-width:700px){
+    .nova-partida-btn{ font-size:0.78rem !important; padding:8px 12px !important; }
+    .hist-title{ font-size:1rem !important; letter-spacing:1px !important; }
+    .nova-form-grid{ grid-template-columns:1fr !important; }
+  }
 
   /* ── Glossy pill badge ── */
   .gloss-badge{
@@ -544,6 +713,28 @@ const COMPS = ["Campeonato Nacional","Copa","Champions League","Libertadores","S
 const lbl_s = {display:"block",fontSize:"0.72rem",fontWeight:800,color:C.textMid,letterSpacing:2,marginBottom:5,textTransform:"uppercase"};
 const inp_s = {width:"100%",border:"1px solid rgba(255,255,255,0.6)",borderRadius:10,padding:"10px 14px",fontSize:"0.9rem",color:C.text,background:"rgba(255,255,255,0.65)",backdropFilter:"blur(8px)",boxShadow:"0 2px 8px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.8) inset"};
 
+// ─── DATE HELPERS ─────────────────────────────────────────────────────────────
+// Aplica máscara dd/mm/aaaa enquanto o usuário digita
+function maskDate(val){
+  let v = val.replace(/\D/g,"").slice(0,8);
+  if(v.length>4) v = v.slice(0,2)+"/"+v.slice(2,4)+"/"+v.slice(4);
+  else if(v.length>2) v = v.slice(0,2)+"/"+v.slice(2);
+  return v;
+}
+// Converte dd/mm/aaaa -> aaaa-mm-dd (ISO) para uso interno
+function dateToISO(d){
+  const p=d.split("/");
+  if(p.length!==3||p[2].length!==4) return "";
+  return `${p[2]}-${p[1]}-${p[0]}`;
+}
+// Converte aaaa-mm-dd -> dd/mm/aaaa para exibição
+function dateFromISO(d){
+  if(!d) return "";
+  const p=d.split("-");
+  if(p.length!==3) return d;
+  return `${p[2]}/${p[1]}/${p[0]}`;
+}
+
 // ─── STORAGE HELPERS ──────────────────────────────────────────────────────────
 async function storageGet(key){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):null; }catch{ return null; } }
 function storageSet(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
@@ -558,6 +749,7 @@ function App(){
   const [matches,setMatches]         = useState([]);
   const [matchOpen,setMatchOpen]     = useState(false);
   const [newM,setNewM]               = useState({myTeam:"",opponent:"",competition:"Campeonato Nacional",isFinal:false,isNational:false,matchDate:"",players:[]});
+  const [dateDisplay,setDateDisplay] = useState("");
   const [openMatch,setOpenMatch]     = useState(null);
   const [liveMinute,setLiveMinute]   = useState(0);
   const [goalAnim,setGoalAnim]       = useState(false);
@@ -584,6 +776,7 @@ function App(){
   const [season,setSeason]           = useState("2024/25");
   const [seasonArchive,setSeasonArchive] = useState([]);
   const [endSeasonOpen,setEndSeasonOpen] = useState(false);
+  const [myTeamDefault,setMyTeamDefault] = useState("");
 
   // ── LOAD FROM STORAGE ──
   useEffect(()=>{
@@ -599,6 +792,7 @@ function App(){
         if(d.playerName) setPlayerName(d.playerName);
         if(d.season)     setSeason(d.season);
         if(d.seasonArchive) setSeasonArchive(d.seasonArchive);
+        if(d.myTeamDefault) setMyTeamDefault(d.myTeamDefault);
       }
       setLoaded(true);
     })();
@@ -607,8 +801,8 @@ function App(){
   // ── SAVE TO STORAGE ──
   useEffect(()=>{
     if(!loaded) return;
-    storageSet("pes_manager_data",{balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,seasonArchive});
-  },[balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,loaded]);
+    storageSet("pes_manager_data",{balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,seasonArchive,myTeamDefault});
+  },[balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,loaded,myTeamDefault]);
 
   // ── CHECK ACHIEVEMENTS ──
   useEffect(()=>{
@@ -638,8 +832,18 @@ function App(){
   const endSeason=(nextSeason)=>{
     const seasonStats = calcStats(pesHistory);
     seasonStats.totalPnuts = pnuts;
+    // Detectar todos os times jogados na temporada, em ordem cronológica de aparição
+    const teamOrder=[], teamCount={};
+    for(const p of [...pesHistory].reverse()){
+      if(!teamCount[p.myTeam]) teamOrder.push(p.myTeam);
+      teamCount[p.myTeam]=(teamCount[p.myTeam]||0)+1;
+    }
+    // Lista ordenada por primeira aparição, com contagem de partidas
+    const myTeams = teamOrder.map(t=>({name:t,matches:teamCount[t]}));
     const archived = {
       season,
+      myTeams,                                      // array com todos os times
+      myTeam: myTeams[0]?.name || myTeamDefault,   // compatibilidade retroativa
       archivedAt: new Date().toLocaleString("pt-BR"),
       matches: [...matches],
       pesHistory: [...pesHistory],
@@ -669,23 +873,35 @@ function App(){
     setTimeout(()=>{ setGoalAnim(false); setConfetti([]); },1200);
   };
 
+  // ── SINCRONIZAR TIME PADRÃO ──
+  useEffect(()=>{
+    if(loaded && myTeamDefault) {
+      setNewM(n=>n.myTeam===""?{...n,myTeam:myTeamDefault}:n);
+    }
+  },[loaded,myTeamDefault]);
+
   // ── MATCH ──
   const createMatch=()=>{
     if(!newM.myTeam.trim()||!newM.opponent.trim()) return;
+    const teamName = newM.myTeam.trim();
+    // Salvar como time padrão para próximas partidas
+    setMyTeamDefault(teamName);
     const m={
-      id:Date.now(), myTeam:newM.myTeam.trim(), opponent:newM.opponent.trim(),
+      id:Date.now(), myTeam:teamName, opponent:newM.opponent.trim(),
       competition:newM.competition, isFinal:newM.isFinal, isNational:newM.isNational,
       matchDate:newM.matchDate, season,
       createdAt:new Date().toLocaleDateString("pt-BR"),
-      odds:genOdds(newM.myTeam.trim(),newM.opponent.trim(),newM.players||[]),
+      odds:genOdds(teamName,newM.opponent.trim(),newM.players||[]),
       history:Array.from({length:5},()=>["V","E","D"][Math.floor(Math.random()*3)]),
       status:"prelive", events:[], score:{my:0,adv:0}, isWin:false,
       preBets:[], pnutsEarned:0, synergyBonus:0,
-      myRating:getRating(newM.myTeam.trim()), oppRating:getRating(newM.opponent.trim()),
+      myRating:getRating(teamName), oppRating:getRating(newM.opponent.trim()),
       players:newM.players||[],
     };
     setMatches(ms=>[m,...ms]);
-    setNewM({myTeam:"",opponent:"",competition:"Campeonato Nacional",isFinal:false,isNational:false,matchDate:"",players:[]});
+    // Ao resetar, mantém o time e a competição, limpa só o adversário e data
+    setNewM({myTeam:teamName,opponent:"",competition:newM.competition,isFinal:false,isNational:false,matchDate:"",players:[]});
+    setDateDisplay("");
     setMatchOpen(false);
     notify("Partida criada! Clique para abrir.");
   };
@@ -996,11 +1212,14 @@ function App(){
       {/* ENCERRAR TEMPORADA */}
       {endSeasonOpen&&<EndSeasonModal season={season} onClose={()=>setEndSeasonOpen(false)} onConfirm={endSeason} pesHistory={pesHistory} pnuts={pnuts} matches={matches}/>}
       {matchOpen&&<Modal onClose={()=>setMatchOpen(false)} title="⚽ Nova Partida" wide>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+        <div className="nova-form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
           <div>
             <label style={lbl_s}>Meu Time</label>
-            <input value={newM.myTeam} onChange={e=>setNewM(n=>({...n,myTeam:e.target.value}))} placeholder="Ex: Real Madrid" style={inp_s}/>
-            {newM.myTeam&&<div style={{fontSize:"0.72rem",color:C.blue,marginTop:3}}>⚡ Força: {getRating(newM.myTeam)}/100</div>}
+            <input value={newM.myTeam} onChange={e=>{setNewM(n=>({...n,myTeam:e.target.value}));}} placeholder="Ex: Real Madrid" style={inp_s}/>
+            {newM.myTeam&&<div style={{fontSize:"0.72rem",color:C.blue,marginTop:3,display:"flex",alignItems:"center",gap:6}}>
+              <span>⚡ Força: {getRating(newM.myTeam)}/100</span>
+              {myTeamDefault&&newM.myTeam===myTeamDefault&&<span style={{background:"rgba(34,197,94,0.12)",color:C.green,borderRadius:20,padding:"1px 7px",fontSize:"0.65rem",fontWeight:700}}>📌 memorizado</span>}
+            </div>}
           </div>
           <div>
             <label style={lbl_s}>Adversário</label>
@@ -1014,7 +1233,7 @@ function App(){
             {(()=>{const o=calcSmartOdds(newM.myTeam,newM.opponent); return <span style={{marginLeft:8}}>{newM.myTeam} <strong style={{color:C.blue}}>{o.A}</strong> · Empate <strong style={{color:C.blue}}>{o.D}</strong> · {newM.opponent} <strong style={{color:C.blue}}>{o.B}</strong></span>; })()}
           </div>
         )}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+        <div className="nova-form-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
           <div>
             <label style={lbl_s}>Competição</label>
             <select value={newM.competition} onChange={e=>setNewM(n=>({...n,competition:e.target.value}))} style={{...inp_s,appearance:"none"}}>
@@ -1023,7 +1242,20 @@ function App(){
           </div>
           <div>
             <label style={lbl_s}>Data do Jogo (calendário PES)</label>
-            <input type="date" value={newM.matchDate} onChange={e=>setNewM(n=>({...n,matchDate:e.target.value}))} style={inp_s}/>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="dd/mm/aaaa"
+              value={dateDisplay}
+              onChange={e=>{
+                const masked=maskDate(e.target.value);
+                setDateDisplay(masked);
+                // Só salva ISO se data completa (dd/mm/aaaa = 10 chars)
+                const iso=masked.length===10?dateToISO(masked):"";
+                setNewM(n=>({...n,matchDate:iso}));
+              }}
+              style={{...inp_s,letterSpacing:1}}
+            />
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginBottom:20}}>
@@ -1083,7 +1315,7 @@ function App(){
             <ApostasTab
               matches={matches} betHistory={betHistory} histTab={histTab} setHistTab={setHistTab}
               onOpen={id=>{setOpenMatch(id);setMarketTab("Resultado Final");setBetSlip([]);setStakeInput("");setLiveMinute(0);}}
-              onNew={()=>setMatchOpen(true)} settleBet={settleBet} balance={balance} pnuts={pnuts}
+              onNew={()=>{ setDateDisplay(dateFromISO(newM.matchDate)); setMatchOpen(true); }} settleBet={settleBet} balance={balance} pnuts={pnuts}
               depOpen={()=>setDepOpen(true)}
             />
           )
@@ -1118,14 +1350,14 @@ function Dashboard({matches,pesHistory,pnuts,balance,stats,achievements,season,s
 
   return(
     <div>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:22,flexWrap:"wrap",gap:10}}>
         <div>
           <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",letterSpacing:3,color:C.blueDark,lineHeight:1,fontWeight:900,textShadow:"0 2px 8px rgba(14,165,233,0.2)"}}>Bem-vindo, {playerName}!</div>
           <div style={{color:C.textSoft,fontSize:"0.84rem",marginTop:4,fontWeight:600}}>Temporada {season} · NARRYBET</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:"0.78rem",color:C.textMid,fontWeight:700}}>Temporada:</span>
-          <input value={season} onChange={e=>setSeason(e.target.value)} style={{...inp_s,width:110,padding:"6px 10px",fontSize:"0.85rem"}}/>
+          <input value={season} onChange={e=>setSeason(e.target.value)} style={{...inp_s,width:100,padding:"6px 10px",fontSize:"0.85rem"}}/>
         </div>
       </div>
 
@@ -1137,7 +1369,7 @@ function Dashboard({matches,pesHistory,pnuts,balance,stats,achievements,season,s
       )}
 
       {/* KPIs */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:12,marginBottom:22}}>
+      <div className="kpi-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:12,marginBottom:22}}>
         {[
           {icon:"🥜",val:pnuts,label:"Amendoins",col:C.gold,bg:"rgba(245,158,11,0.12)"},
           {icon:"💰",val:`R$${balance.toFixed(0)}`,label:"Saldo",col:C.blue,bg:C.blueLight},
@@ -1158,7 +1390,7 @@ function Dashboard({matches,pesHistory,pnuts,balance,stats,achievements,season,s
         ))}
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
+      <div className="dash-two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
         {/* Próximas */}
         <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
           <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:12}}>📅 Próximas Partidas</div>
@@ -1231,8 +1463,24 @@ function Dashboard({matches,pesHistory,pnuts,balance,stats,achievements,season,s
             {seasonArchive.map((arc,i)=>{
               const wr=arc.stats.totalMatches>0?Math.round(arc.stats.wins/arc.stats.totalMatches*100):0;
               return(
-                <div key={i} style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
-                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",letterSpacing:2,color:C.blue,minWidth:90}}>{arc.season}</div>
+                <div key={i} className="season-arc-row" style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,minWidth:90}}>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",letterSpacing:2,color:C.blue}}>{arc.season}</div>
+                    {/* Suporte a myTeams (array) e myTeam (string retrocompatível) */}
+                    {(arc.myTeams||[]).length>0?(
+                      <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                        {arc.myTeams.map((t,ti)=>(
+                          <div key={ti} style={{display:"flex",alignItems:"center",gap:5,fontSize:"0.68rem",color:C.textSoft,fontWeight:700}}>
+                            <span>🏟️</span>
+                            <span style={{color:C.textMid}}>{t.name}</span>
+                            <span style={{background:"rgba(14,165,233,0.12)",color:C.blue,borderRadius:10,padding:"0px 6px",fontSize:"0.6rem",fontWeight:800}}>{t.matches}j</span>
+                          </div>
+                        ))}
+                      </div>
+                    ):arc.myTeam?(
+                      <div style={{fontSize:"0.7rem",color:C.textSoft,fontWeight:700}}>🏟️ {arc.myTeam}</div>
+                    ):null}
+                  </div>
                   <div style={{display:"flex",gap:16,flex:1,flexWrap:"wrap"}}>
                     <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.text}}>{arc.stats.totalMatches}</strong> partidas</span>
                     <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.green}}>{arc.stats.totalGoals}⚽</strong></span>
@@ -1302,7 +1550,7 @@ function EndSeasonModal({season,onClose,onConfirm,pesHistory,pnuts,matches}){
 // ─── APOSTAS TAB ──────────────────────────────────────────────────────────────
 function ApostasTab({matches,betHistory,histTab,setHistTab,onOpen,onNew,settleBet,balance,pnuts,depOpen}){
   return(
-    <div style={{display:"grid",gridTemplateColumns:"1fr 190px",gap:20}}>
+    <div className="apostas-layout" style={{display:"grid",gridTemplateColumns:"1fr 190px",gap:20}}>
       <div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
           <div>
@@ -1364,7 +1612,7 @@ function ApostasTab({matches,betHistory,histTab,setHistTab,onOpen,onNew,settleBe
       </div>
 
       {/* Sidebar saldo */}
-      <div style={{position:"sticky",top:72}}>
+      <div className="apostas-sidebar" style={{position:"sticky",top:72}}>
         <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)",boxShadow:"0 4px 20px rgba(26,86,219,0.07)"}}>
           <div style={{background:`linear-gradient(135deg,${C.blue},${C.blueM})`,padding:"14px 16px"}}>
             <div style={{fontSize:"0.6rem",color:"rgba(255,255,255,0.7)",fontWeight:700,letterSpacing:2}}>SALDO</div>
@@ -1393,15 +1641,14 @@ function MatchSummaryCard({match:m,onClick}){
   const s=sc[m.status];
   return(
     <div className="mc" onClick={onClick} style={{background:"rgba(255,255,255,0.65)",border:`1px solid ${m.status==="live"?C.live:C.border}`,borderRadius:14,padding:"13px 18px",cursor:"pointer",transition:"all 0.2s",boxShadow:m.status==="live"?"0 4px 20px rgba(239,68,68,0.1)":"0 1px 4px rgba(0,0,0,0.04)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
-          <span style={{background:s.bg,color:s.col,fontSize:"0.67rem",fontWeight:700,padding:"3px 8px",borderRadius:20,display:"flex",alignItems:"center",gap:3}}>
+      <div className="match-card-body" style={{display:"flex",alignItems:"center",gap:12}}>
+        <div className="match-card-chips" style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
+          <span style={{background:s.bg,color:s.col,fontSize:"0.67rem",fontWeight:700,padding:"3px 8px",borderRadius:20,display:"flex",alignItems:"center",gap:3,whiteSpace:"nowrap"}}>
             {m.status==="live"&&<span className="live-dot" style={{width:6,height:6,borderRadius:"50%",background:C.live,display:"inline-block"}}/>}
             {s.label}
           </span>
           {m.isFinal&&<Chip color="#b45309" bg="#fef3c7">🏆 Final</Chip>}
-          {m.isNational&&<Chip color="#0284c7" bg="#e0f2fe">🌍 Seleção</Chip>}
-          <Chip color={C.blue} bg={C.blueLight}>{m.competition}</Chip>
+          {m.isNational&&<Chip color="#0284c7" bg="#e0f2fe">🌍</Chip>}
         </div>
         <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:14}}>
           <div style={{textAlign:"right",flex:1}}>
@@ -1461,26 +1708,26 @@ function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setSta
           <Chip color={C.blue} bg={C.blueLight}>{m.competition}</Chip>
           {m.matchDate&&<Chip color={C.textMid} bg="#f1f5f9">{new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR")}</Chip>}
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:24}}>
+        <div className="scoreboard-teams" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:24}}>
           <div style={{textAlign:"center",flex:1}}>
-            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.myTeam}</div>
+            <div className="scoreboard-team-name" style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.myTeam}</div>
             <div style={{fontSize:"0.68rem",color:C.blue,fontWeight:600}}>MEU TIME · ⚡{m.myRating}</div>
           </div>
           <div style={{textAlign:"center"}}>
             {isPre?(
               <div style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"12px 28px"}}>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:C.blue,letterSpacing:3}}>PRÉ-LIVE</div>
+                <div className="scoreboard-score-number" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:C.blue,letterSpacing:3}}>PRÉ</div>
               </div>
             ):(
-              <div className={goalAnim?"goal-pop":""} style={{background:isLive?C.live:C.blueDark,color:"#fff",borderRadius:12,padding:"10px 28px",minWidth:120,transition:"background 0.3s"}}>
-                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"3rem",letterSpacing:3,lineHeight:1}}>{m.score.my}–{m.score.adv}</div>
+              <div className={`scoreboard-score${goalAnim?" goal-pop":""}`} style={{background:isLive?C.live:C.blueDark,color:"#fff",borderRadius:12,padding:"10px 28px",minWidth:120,transition:"background 0.3s"}}>
+                <div className="scoreboard-score-number" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"3rem",letterSpacing:3,lineHeight:1}}>{m.score.my}–{m.score.adv}</div>
                 {isLive&&<div style={{fontSize:"0.72rem",opacity:0.85,marginTop:2,textAlign:"center"}}>{liveMinute}'</div>}
               </div>
             )}
           </div>
           <div style={{textAlign:"center",flex:1}}>
-            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.opponent}</div>
-            <div style={{fontSize:"0.68rem",color:C.textSoft,fontWeight:600}}>ADVERSÁRIO · ⚡{m.oppRating}</div>
+            <div className="scoreboard-team-name" style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.opponent}</div>
+            <div style={{fontSize:"0.68rem",color:C.textSoft,fontWeight:600}}>ADV · ⚡{m.oppRating}</div>
           </div>
         </div>
         <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:6,marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
@@ -1539,7 +1786,7 @@ function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setSta
               {/* MINUTAGEM SLIDER */}
               <MinuteSlider minute={liveMinute} onChange={setLiveMinute}/>
 
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,marginTop:16}}>
+              <div className="event-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,marginTop:16}}>
                 {EVENT_TYPES.map(et=>{
                   const count=m.events.filter(e=>e.type===et.type).length;
                   return(
@@ -1550,8 +1797,8 @@ function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setSta
                         color:C.text,textAlign:"center",position:"relative",
                         boxShadow:et.isMyAction?`0 2px 8px ${et.color}22`:"none"
                       }}>
-                        <div style={{fontSize:"1.6rem",marginBottom:4}}>{et.icon}</div>
-                        <div style={{fontSize:"0.74rem",fontWeight:700,color:et.color,marginBottom:et.pnLabel?2:0}}>{et.label}</div>
+                        <div className="event-btn-icon" style={{fontSize:"1.6rem",marginBottom:4}}>{et.icon}</div>
+                        <div className="event-btn-label" style={{fontSize:"0.74rem",fontWeight:700,color:et.color,marginBottom:et.pnLabel?2:0}}>{et.label}</div>
                         {et.pnLabel&&<div style={{display:"inline-block",background:C.goldL,color:C.gold,borderRadius:10,padding:"1px 8px",fontSize:"0.65rem",fontWeight:700}}>{et.pnLabel}</div>}
                         {count>0&&<div style={{position:"absolute",top:6,right:8,background:et.color,color:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700}}>{count}</div>}
                       </button>
@@ -1892,7 +2139,7 @@ function FormaChart({pesHistory}){
       </div>
 
       {/* Resumo forma */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+      <div className="forma-resumo-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
         {(()=>{
           const wins=last20.filter(p=>p.isWin).length;
           const draws=last20.filter(p=>p.isDraw).length;
@@ -2184,7 +2431,7 @@ function DuelosTab({pesHistory}){
           </div>
 
           {/* Stats gerais */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          <div className="duelo-stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
             {[
               {icon:"⚽",label:"Gols marcados",val:sel.goalsFor,col:C.green,bg:C.greenL},
               {icon:"🔴",label:"Gols sofridos",val:sel.goalsAgainst,col:C.accent,bg:C.liveL},
@@ -2245,22 +2492,22 @@ function PerfilTab({playerName,setPlayerName,playerNameEdit,setPlayerNameEdit,st
   return(
     <div>
       {/* Card jogador */}
-      <div style={{background:"linear-gradient(135deg,rgba(2,132,199,0.88),rgba(14,165,233,0.75))",backdropFilter:"blur(20px)",borderRadius:20,padding:"28px 28px",marginBottom:22,display:"flex",gap:24,alignItems:"center",boxShadow:"0 12px 40px rgba(3,105,161,0.3),0 1px 0 rgba(255,255,255,0.3) inset",border:"1px solid rgba(255,255,255,0.3)"}}>
+      <div className="perfil-card" style={{background:"linear-gradient(135deg,rgba(2,132,199,0.88),rgba(14,165,233,0.75))",backdropFilter:"blur(20px)",borderRadius:20,padding:"28px 28px",marginBottom:22,display:"flex",gap:24,alignItems:"center",boxShadow:"0 12px 40px rgba(3,105,161,0.3),0 1px 0 rgba(255,255,255,0.3) inset",border:"1px solid rgba(255,255,255,0.3)"}}>
         <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2.5rem",flexShrink:0,border:"3px solid rgba(255,255,255,0.3)"}}>👤</div>
-        <div style={{flex:1}}>
+        <div style={{flex:1,minWidth:0}}>
           {playerNameEdit?(
-            <div style={{display:"flex",gap:8,alignItems:"center"}}>
-              <input value={nameInput} onChange={e=>setNameInput(e.target.value)} style={{...inp_s,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:"1.3rem",fontFamily:"'Orbitron',sans-serif",letterSpacing:2,width:220}}/>
+            <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+              <input value={nameInput} onChange={e=>setNameInput(e.target.value)} style={{...inp_s,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:"1.1rem",fontFamily:"'Orbitron',sans-serif",letterSpacing:2,width:"100%",maxWidth:220}}/>
               <button onClick={()=>{setPlayerName(nameInput);setPlayerNameEdit(false);}} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",borderRadius:8,padding:"8px 16px",fontWeight:700}}>Salvar</button>
             </div>
           ):(
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:"#fff",letterSpacing:3,lineHeight:1}}>{playerName}</div>
+            <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+              <div className="perfil-name" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:"#fff",letterSpacing:3,lineHeight:1}}>{playerName}</div>
               <button onClick={()=>{setNameInput(playerName);setPlayerNameEdit(true);}} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:6,padding:"4px 10px",fontSize:"0.75rem"}}>✏️ Editar</button>
             </div>
           )}
-          <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.82rem",marginTop:4}}>Temporada {season} · {achievements.length} conquistas desbloqueadas</div>
-          <div style={{display:"flex",gap:16,marginTop:12}}>
+          <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.82rem",marginTop:4}}>Temporada {season} · {achievements.length} conquistas</div>
+          <div className="perfil-stats-row" style={{display:"flex",gap:16,marginTop:12,flexWrap:"wrap"}}>
             {[["💰",`R$ ${balance.toFixed(0)}`,"Saldo"],["🥜",pnuts,"Amendoins"],["📈",`${winRate}%`,"Vitórias"]].map(([i,v,l])=>(
               <div key={l} style={{textAlign:"center"}}>
                 <div style={{fontSize:"1rem"}}>{i}</div>
@@ -2398,7 +2645,7 @@ function RulesTable(){
   return(
     <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)"}}>
       <div style={{background:`linear-gradient(135deg,${C.blueMid},${C.blue})`,display:"grid",gridTemplateColumns:"auto 1fr auto auto",padding:"9px 16px",gap:12}}>
-        {["","Ação","Normal","🌍 Seleção"].map((h,i)=><div key={i} style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.85)",fontWeight:700,letterSpacing:1}}>{h}</div>)}
+        {["","Ação","Normal","🌍 Seleção"].map((h,i)=><div key={i} className={i===3?"rules-header-nacional":""} style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.85)",fontWeight:700,letterSpacing:1}}>{h}</div>)}
       </div>
       {[
         ["⚽","Gol normal / pé direito","2🥜","3🥜"],
@@ -2416,14 +2663,14 @@ function RulesTable(){
         ["🏆","Gol em final","Extra +2","Extra +3"],
         ["🥇","Vitória em final","Extra +1","Extra +1"],
         ["⭐","Sinergia aposta+ação","+1-3🥜","—"],
-        ["🟨","Cartão amarelo","-1🥜 (quitado se marcar gol)","—"],
-        ["🟥","Cartão vermelho","-3🥜 (quitado se marcar gol)","—"],
+        ["🟨","Cartão amarelo","-1🥜 (quitado se gol)","—"],
+        ["🟥","Cartão vermelho","-3🥜 (quitado se gol)","—"],
       ].map(([ico,l,n,s],i)=>(
-        <div key={i} style={{display:"grid",gridTemplateColumns:"auto 1fr auto auto",padding:"10px 16px",gap:12,background:i%2===0?"#fff":C.blueLight,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
+        <div key={i} className="rules-row" style={{display:"grid",gridTemplateColumns:"auto 1fr auto auto",padding:"10px 16px",gap:12,background:i%2===0?"#fff":C.blueLight,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
           <div style={{fontSize:"1rem"}}>{ico}</div>
-          <div style={{fontSize:"0.83rem",color:C.text,fontWeight:500}}>{l}</div>
-          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.blue,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{n}</div>
-          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.green,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{s}</div>
+          <div className="rules-label" style={{fontSize:"0.83rem",color:C.text,fontWeight:500}}>{l}</div>
+          <div className="rules-val" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.blue,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{n}</div>
+          <div className="rules-val rules-col-nacional" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.green,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{s}</div>
         </div>
       ))}
     </div>
@@ -2445,7 +2692,7 @@ function BetCard({bet,settleBet}){
           <span style={{color:C.blue,fontWeight:700,marginLeft:5}}>@ {b.odd}</span>
         </div>
       ))}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+      <div className="bet-card-footer" style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
         <div style={{fontSize:"0.79rem"}}>
           R$ <strong>{bet.stake.toFixed(2)}</strong>
           <span style={{color:C.textSoft,margin:"0 4px"}}>·</span>
@@ -2467,7 +2714,7 @@ function BetCard({bet,settleBet}){
 function Modal({children,onClose,title,wide}){
   return(
     <div style={{position:"fixed",inset:0,background:"rgba(3,60,100,0.45)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{
+      <div onClick={e=>e.stopPropagation()} className="modal-inner" style={{
         background:"rgba(255,255,255,0.82)",backdropFilter:"blur(24px) saturate(1.6)",
         borderRadius:20,padding:28,width:wide?"min(580px,95vw)":"min(430px,95vw)",
         boxShadow:"0 24px 64px rgba(3,105,161,0.22), 0 1px 0 rgba(255,255,255,0.9) inset",
@@ -2475,7 +2722,7 @@ function Modal({children,onClose,title,wide}){
         animation:"sd 0.22s ease",maxHeight:"92vh",overflowY:"auto"
       }}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blueDark,fontWeight:700}}>{title}</div>
+          <div className="modal-title" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blueDark,fontWeight:700}}>{title}</div>
           <button onClick={onClose} style={{background:"rgba(14,165,233,0.1)",border:"1px solid rgba(14,165,233,0.2)",color:C.textSoft,fontSize:"1rem",lineHeight:1,borderRadius:8,padding:"4px 8px"}}>✕</button>
         </div>
         {children}

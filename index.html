@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#0284c7"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>NARRYBET ⚽</title>
+  <link rel="manifest" href="manifest.json"/>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{min-height:100%;overflow-x:hidden;}
+    body{
+      background:
+        radial-gradient(ellipse 120% 80% at 10% -10%, rgba(125,211,252,0.55) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 60% at 90% 110%, rgba(56,189,248,0.35) 0%, transparent 50%),
+        linear-gradient(160deg, #bae6fd 0%, #dbeafe 40%, #e0f2fe 70%, #bfdbfe 100%);
+      background-attachment:fixed;
+    }
+    #root{min-height:100vh;}
+    #loading{
+      position:fixed;inset:0;
+      background:linear-gradient(160deg,#0c4a6e,#0369a1,#0ea5e9);
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      z-index:9999;transition:opacity 0.5s ease;
+    }
+    #loading .logo{
+      font-family:'Orbitron',sans-serif;
+      font-size:2.8rem;font-weight:900;letter-spacing:6px;
+      background:linear-gradient(180deg,#fff 0%,#7dd3fc 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      text-shadow:none;margin-top:16px;
+    }
+    #loading .ball{
+      font-size:3.5rem;
+      animation:spin 1.2s linear infinite;
+      filter:drop-shadow(0 0 20px rgba(125,211,252,0.8));
+    }
+    #loading .sub{
+      font-family:sans-serif;font-size:0.75rem;letter-spacing:4px;
+      color:rgba(186,230,253,0.7);margin-top:8px;font-weight:600;
+    }
+    #loading .bar{
+      width:160px;height:3px;background:rgba(255,255,255,0.15);
+      border-radius:4px;margin-top:24px;overflow:hidden;
+    }
+    #loading .bar-fill{
+      height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#fff);
+      border-radius:4px;animation:load 1s ease forwards;
+    }
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    @keyframes load{from{width:0}to{width:100%}}
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+    .slogan{
+      font-family:sans-serif;font-size:0.8rem;letter-spacing:1px;
+      color:rgba(186,230,253,0.55);margin-top:4px;font-style:italic;font-weight:400;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="ball">⚽</div>
+    <div class="logo">NARRYBET</div>
+    <div class="sub">CARREGANDO TEMPORADA...</div>
+    <div class="slogan">Mais ladrão que o Tigrinho 🐯</div>
+    <div class="bar"><div class="bar-fill"></div></div>
+  </div>
+  <div id="root"></div>
+
+  <script type="text/babel" data-presets="react">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+
+// ─── NARRYBET · FRUTIGER AERO PALETTE ────────────────────────────────────────
+const C = {
+  // Core blues — Frutiger Aero sky/water
+  blue:"#0ea5e9",blueDark:"#0369a1",blueLight:"#e0f2fe",blueM:"#38bdf8",
+  blueMid:"#0284c7",blueGlass:"rgba(14,165,233,0.18)",
+  // Accents
+  accent:"#f43f5e",accentO:"#fb923c",
+  green:"#22c55e",greenL:"#dcfce7",greenGlass:"rgba(34,197,94,0.15)",
+  yellow:"#eab308",gold:"#f59e0b",goldL:"#fef3c7",
+  // UI surfaces — glossy glass feel
+  bg:"#dbeafe",           // sky blue background
+  card:"rgba(255,255,255,0.72)",
+  cardGlass:"rgba(255,255,255,0.55)",
+  border:"rgba(14,165,233,0.28)",
+  borderGlass:"rgba(255,255,255,0.45)",
+  // Text
+  text:"#0c1a2e",textMid:"#1e4060",textSoft:"#5a8aaa",
+  // States
+  live:"#f43f5e",liveL:"rgba(244,63,94,0.1)",
+  purple:"#818cf8",purpleL:"rgba(129,140,248,0.15)",
+  // Gloss overlays
+  gloss:"linear-gradient(180deg,rgba(255,255,255,0.55) 0%,rgba(255,255,255,0) 60%)",
+  glossBtn:"linear-gradient(180deg,rgba(255,255,255,0.4) 0%,rgba(255,255,255,0.05) 100%)",
+};
+
+const css_vars = `
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Exo+2:wght@400;600;700;800;900&family=Orbitron:wght@700;900&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+
+  /* ── Frutiger Aero scrollbar ── */
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:rgba(14,165,233,0.08);border-radius:6px;}
+  ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#38bdf8,#0ea5e9);border-radius:6px;}
+
+  body{
+    background:
+      radial-gradient(ellipse 120% 80% at 10% -10%, rgba(125,211,252,0.55) 0%, transparent 55%),
+      radial-gradient(ellipse 90% 60% at 90% 110%, rgba(56,189,248,0.35) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 50% 50%, rgba(186,230,253,0.4) 0%, transparent 70%),
+      linear-gradient(160deg, #bae6fd 0%, #dbeafe 40%, #e0f2fe 70%, #bfdbfe 100%);
+    background-attachment:fixed;
+    min-height:100vh;
+    font-family:'Nunito',sans-serif;
+  }
+
+  /* ── Glass card mixin ── */
+  .glass{
+    background:rgba(255,255,255,0.62);
+    backdrop-filter:blur(16px) saturate(1.4);
+    -webkit-backdrop-filter:blur(16px) saturate(1.4);
+    border:1px solid rgba(255,255,255,0.55);
+    box-shadow:0 4px 24px rgba(14,165,233,0.10), 0 1px 0 rgba(255,255,255,0.8) inset;
+  }
+  .glass-dark{
+    background:rgba(3,105,161,0.18);
+    backdrop-filter:blur(20px) saturate(1.6);
+    -webkit-backdrop-filter:blur(20px) saturate(1.6);
+    border:1px solid rgba(255,255,255,0.22);
+    box-shadow:0 8px 32px rgba(3,105,161,0.22);
+  }
+
+  /* ── Glossy button ── */
+  button{cursor:pointer;transition:all 0.18s;font-family:'Nunito',sans-serif;}
+  button:active{transform:scale(0.95);}
+  select,input{outline:none;font-family:'Nunito',sans-serif;}
+
+  .ob:hover{
+    background:linear-gradient(180deg,#38bdf8,#0284c7)!important;
+    color:#fff!important;
+    border-color:#38bdf8!important;
+    box-shadow:0 4px 16px rgba(14,165,233,0.4),0 1px 0 rgba(255,255,255,0.4) inset!important;
+  }
+  .mc:hover{
+    box-shadow:0 8px 32px rgba(14,165,233,0.18),0 1px 0 rgba(255,255,255,0.8) inset!important;
+    border-color:rgba(255,255,255,0.7)!important;
+    transform:translateY(-1px);
+  }
+
+  /* ── Animations ── */
+  @keyframes sd{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fi{from{opacity:0}to{opacity:1}}
+  @keyframes goalPop{0%{transform:scale(1)}30%{transform:scale(1.4)}60%{transform:scale(0.93)}100%{transform:scale(1)}}
+  @keyframes goalFlash{0%,100%{background:transparent}50%{background:rgba(34,197,94,0.18)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+  @keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(90px) rotate(400deg);opacity:0}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+  @keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+  @keyframes glowPulse{0%,100%{box-shadow:0 0 16px rgba(14,165,233,0.4)}50%{box-shadow:0 0 32px rgba(14,165,233,0.8)}}
+
+  .live-dot{animation:pulse 1.2s infinite;}
+  .goal-pop{animation:goalPop 0.5s ease;}
+  .goal-flash{animation:goalFlash 0.7s ease;}
+  .float{animation:float 3s ease-in-out infinite;}
+
+  /* ── Glossy pill badge ── */
+  .gloss-badge{
+    position:relative;overflow:hidden;
+  }
+  .gloss-badge::after{
+    content:'';position:absolute;top:0;left:0;right:0;height:50%;
+    background:linear-gradient(180deg,rgba(255,255,255,0.5),rgba(255,255,255,0));
+    border-radius:inherit;pointer-events:none;
+  }
+
+  /* ── Aero bubbles in background ── */
+  .aero-bubble{
+    position:fixed;border-radius:50%;pointer-events:none;z-index:0;
+    background:radial-gradient(circle at 35% 35%, rgba(255,255,255,0.7), rgba(14,165,233,0.15));
+    border:1px solid rgba(255,255,255,0.5);
+    box-shadow:0 4px 24px rgba(14,165,233,0.12);
+    animation:float var(--dur,6s) ease-in-out infinite;
+    animation-delay:var(--delay,0s);
+  }
+`;
+
+// ─── CLUB RATINGS (força 1-100) ──────────────────────────────────────────────
+const CLUB_RATINGS = {
+  // Elite mundial
+  "Real Madrid":97,"Barcelona":95,"Manchester City":96,"Bayern Munich":95,"PSG":93,
+  "Liverpool":92,"Chelsea":90,"Arsenal":88,"Manchester United":87,"Tottenham":85,
+  "Juventus":89,"AC Milan":88,"Inter Milan":89,"Napoli":87,"Roma":83,
+  "Atletico Madrid":90,"Sevilla":84,"Real Betis":80,"Valencia":79,"Villarreal":82,
+  "Ajax":84,"Porto":85,"Benfica":83,"Borussia Dortmund":88,"RB Leipzig":85,
+  "Leverkusen":86,"Marseille":82,"Lyon":81,"Monaco":80,
+  // Brasil elite
+  "Flamengo":87,"Palmeiras":86,"Corinthians":84,"São Paulo":83,"Santos":82,
+  "Grêmio":82,"Internacional":81,"Atlético-MG":83,"Fluminense":80,"Vasco":78,
+  "Botafogo":79,"Cruzeiro":80,"Sport":72,"Fortaleza":77,"Ceará":72,
+  "Athletico-PR":78,"Bahia":73,"Goiás":70,"Coritiba":68,"Avaí":67,
+  // Libertadores
+  "Boca Juniors":86,"River Plate":87,"Nacional":80,"Olimpia":75,
+  "Peñarol":79,"Independiente":78,"Racing Club":80,"San Lorenzo":76,
+  // Seleções
+  "Brasil":96,"Argentina":95,"França":94,"Alemanha":93,"Espanha":92,
+  "Portugal":91,"Inglaterra":90,"Itália":89,"Holanda":88,"Bélgica":87,
+  "Uruguai":84,"Croácia":86,"México":82,"EUA":79,"Japão":81,
+  // Menores
+  "Bodo/Glimt":68,"Ferencvaros":70,"Sheriff":65,"Maccabi":66,"Ludogorets":67,
+};
+function getRating(team){ return CLUB_RATINGS[team] || 75; }
+
+// Calcula odds realistas baseado na força relativa
+function calcSmartOdds(myTeam, opponent){
+  const rA = getRating(myTeam), rB = getRating(opponent);
+  const diff = rA - rB; // positivo = meu time é mais forte
+  // Probabilidade implícita usando diff
+  const pA = 0.5 + diff * 0.006; // base 50%, ajuste por diferença
+  const pD = 0.25 - Math.abs(diff)*0.001;
+  const pB = Math.max(0.04, 1 - pA - pD);
+  // Odd = 1/prob com margem da casa ~5%
+  const margin = 1.05;
+  const oddA = +(margin/Math.max(0.05, pA)).toFixed(2);
+  const oddD = +(margin/Math.max(0.10, pD)).toFixed(2);
+  const oddB = +(margin/Math.max(0.05, pB)).toFixed(2);
+  return { A: Math.max(1.02, oddA), D: Math.max(1.10, oddD), B: Math.max(1.02, oddB) };
+}
+
+function rand(a,b){ return +(a+Math.random()*(b-a)).toFixed(2); }
+
+// Types that score a goal for score counting
+const GOAL_TYPES = ["goal","goal_left","goal_right","goal_head","goal_outside","goal_lob","goal_post","fk_goal","corner_goal"];
+
+function genOdds(myTeam, opponent, players=[]){
+  const smart = calcSmartOdds(myTeam, opponent);
+  const totGoals = rand(1.3, 2.1);
+
+  // Player odds — gerar para cada jogador cadastrado
+  const playerOdds = players.flatMap(name=>[
+    {label:`${name} marca gol`,     key:`pl_gol_${name}`,  odd:rand(1.8,4.0),  playerName:name, playerAction:"gol"},
+    {label:`${name} dá assistência`,key:`pl_ass_${name}`,  odd:rand(2.5,5.5),  playerName:name, playerAction:"assist"},
+  ]);
+
+  return {
+    "Resultado Final":[
+      {label:myTeam,      key:"casa",  odd:smart.A},
+      {label:"Empate",    key:"empate",odd:smart.D},
+      {label:opponent,    key:"fora",  odd:smart.B},
+    ],
+    "Total de Gols":[
+      {label:"+0.5",key:"g05m", odd:rand(1.05,1.25)},{label:"-0.5",key:"g05me",odd:rand(3.0,6.0)},
+      {label:"+1.5",key:"g15m", odd:rand(1.25,1.7)}, {label:"-1.5",key:"g15me",odd:rand(2.0,3.0)},
+      {label:"+2.5",key:"g25m", odd:+(totGoals).toFixed(2)},{label:"-2.5",key:"g25me",odd:rand(1.3,1.9)},
+      {label:"+3.5",key:"g35m", odd:rand(3.0,6.5)}, {label:"-3.5",key:"g35me",odd:rand(1.1,1.4)},
+    ],
+    "BTTS":[
+      {label:"Sim",key:"btts_s",odd:rand(1.5,2.2)},
+      {label:"Não",key:"btts_n",odd:rand(1.6,2.2)},
+    ],
+    "Handicap":[
+      {label:myTeam+" −1",    key:"hc1",odd:+(smart.A*1.8).toFixed(2)},
+      {label:myTeam+" +1",    key:"hc2",odd:+(smart.A*0.55).toFixed(2)},
+      {label:opponent+" −1",  key:"hc3",odd:+(smart.B*1.8).toFixed(2)},
+      {label:opponent+" +1",  key:"hc4",odd:+(smart.B*0.55).toFixed(2)},
+    ],
+    "Meu Jogador":[
+      {label:"Marcar gol",      key:"pj_gol", odd:rand(1.7,3.2)},
+      {label:"2+ gols",         key:"pj_2g",  odd:rand(2.8,6.5)},
+      {label:"Hat-trick",       key:"pj_hat", odd:rand(7.0,16.0)},
+      {label:"Dar assistência", key:"pj_ass", odd:rand(2.2,4.5)},
+      {label:"Gol de falta",    key:"pj_fk",  odd:rand(4.5,13.0)},
+      {label:"Gol escanteio",   key:"pj_corn",odd:rand(5.5,12.0)},
+      {label:"Melhor em campo", key:"pj_motm",odd:rand(2.2,5.5)},
+    ],
+    "Tipo de Gol":[
+      {label:"Pé esquerdo",      key:"tg_left",    odd:rand(2.5,4.5)},
+      {label:"Pé direito",       key:"tg_right",   odd:rand(1.4,2.5)},
+      {label:"Cabeça",           key:"tg_head",    odd:rand(3.5,7.0)},
+      {label:"Fora da área",     key:"tg_outside", odd:rand(4.5,9.0)},
+      {label:"Cobertura (lob)",  key:"tg_lob",     odd:rand(8.0,18.0)},
+      {label:"No travessão",     key:"tg_post",    odd:rand(9.0,20.0)},
+    ],
+    ...(playerOdds.length>0 ? {"Jogadores":playerOdds} : {}),
+  };
+}
+
+// ─── AMENDOIM CALC ────────────────────────────────────────────────────────────
+function calcPnuts(events, isNational, isFinal, isWin){
+  const m = isNational?1.5:1;
+  let t = 0;
+  let cardDebt = 0;   // dívida por cartões
+  let goalCount = 0;  // total de gols para quitar dívida
+
+  for(const e of events){
+    switch(e.type){
+      case "goal":         t += Math.ceil(2*m); goalCount++; break;
+      case "goal_right":   t += Math.ceil(2*m); goalCount++; break;
+      case "goal_left":    t += Math.ceil(3*m); goalCount++; break;
+      case "goal_head":    t += Math.ceil(3*m); goalCount++; break;
+      case "goal_outside": t += Math.ceil(4*m); goalCount++; break;
+      case "goal_lob":     t += Math.ceil(5*m); goalCount++; break;
+      case "goal_post":    t += Math.ceil(5*m); goalCount++; break;
+      case "fk_goal":      t += Math.ceil(4*m); goalCount++; break;
+      case "corner_goal":  t += Math.ceil(3*m); goalCount++; break;
+      case "assist":       t += Math.ceil(1*m); break;
+      case "yellow":       cardDebt += 1; break;
+      case "red":          cardDebt += 3; break;
+      default: break;
+    }
+  }
+
+  // Bônus hat-trick / dobradinha
+  if(goalCount>=3) t += isNational?5:3;
+  else if(goalCount===2) t += isNational?3:2;
+
+  // Bônus assistências
+  const assists = events.filter(e=>e.type==="assist").length;
+  if(assists>=3) t += isNational?5:3;
+
+  // Bônus final
+  if(isFinal&&goalCount>0) t += isNational?3:2;
+  if(isFinal&&isWin) t += 1;
+
+  // Sistema de dívida: cartão amarelo = -1, vermelho = -3
+  // Se fizer gol na partida, quita a dívida. Caso contrário, desconta do total.
+  if(cardDebt > 0){
+    if(goalCount > 0){
+      // Gol quita a dívida — notação no retorno via debtCleared flag
+      t = Math.max(0, t - 0); // dívida quitada pelo gol, não desconta mais
+    } else {
+      t = Math.max(0, t - cardDebt);
+    }
+  }
+
+  return { total: t, cardDebt, debtCleared: cardDebt>0 && goalCount>0, goalCount };
+}
+
+function calcPnutsTotal(events, isNational, isFinal, isWin){
+  const r = calcPnuts(events, isNational, isFinal, isWin);
+  return r.total;
+}
+
+function calcSynergy(bets, events, isWin){
+  let b = 0;
+  const g   = events.filter(e=>GOAL_TYPES.includes(e.type)).length;
+  const as  = events.filter(e=>e.type==="assist").length;
+  const hasFk  = events.some(e=>e.type==="fk_goal");
+  const hasCor = events.some(e=>e.type==="corner_goal");
+  const hasLeft = events.some(e=>e.type==="goal_left");
+  const hasRight= events.some(e=>e.type==="goal_right");
+  const hasHead = events.some(e=>e.type==="goal_head");
+  const hasOut  = events.some(e=>e.type==="goal_outside");
+  const hasLob  = events.some(e=>e.type==="goal_lob");
+  const hasPost = events.some(e=>e.type==="goal_post");
+  for(const bet of bets){
+    const k=bet.key;
+    if(k==="pj_gol"  && g>0)     b+=1;
+    if(k==="pj_ass"  && as>0)    b+=1;
+    if(k==="pj_fk"   && hasFk)   b+=1;
+    if(k==="pj_corn" && hasCor)  b+=1;
+    if(k==="pj_2g"   && g>=2)    b+=1;
+    if(k==="pj_hat"  && g>=3)    b+=2;
+    if(k==="casa"    && isWin)   b+=1;
+    if(k==="pj_motm" && isWin)   b+=1;
+    if(k==="tg_left"    && hasLeft)  b+=2;
+    if(k==="tg_right"   && hasRight) b+=1;
+    if(k==="tg_head"    && hasHead)  b+=2;
+    if(k==="tg_outside" && hasOut)   b+=2;
+    if(k==="tg_lob"     && hasLob)   b+=3;
+    if(k==="tg_post"    && hasPost)  b+=3;
+    // Player bets synergy
+    if(bet.playerAction==="gol" && g>0) b+=1;
+    if(bet.playerAction==="assist" && as>0) b+=1;
+  }
+  return b;
+}
+
+// ─── CONQUISTAS ───────────────────────────────────────────────────────────────
+const ACHIEVEMENTS = [
+  {id:"first_goal",    icon:"⚽", name:"Primeiro Gol",      desc:"Marque seu primeiro gol",          check:(s)=>s.totalGoals>=1},
+  {id:"hat_trick",     icon:"🔥", name:"Hat-trick Lendário", desc:"Faça um hat-trick",                check:(s)=>s.hatTricks>=1},
+  {id:"100pnuts",      icon:"🥜", name:"Amendoim Centenário",desc:"Acumule 100 amendoins",            check:(s)=>s.totalPnuts>=100},
+  {id:"10matches",     icon:"🕹️", name:"Veterano",          desc:"Jogue 10 partidas",                check:(s)=>s.totalMatches>=10},
+  {id:"5wins",         icon:"🏆", name:"Campeão em Série",   desc:"Vença 5 partidas seguidas",        check:(s)=>s.winStreak>=5},
+  {id:"50goals",       icon:"🎯", name:"Artilheiro Supremo", desc:"Marque 50 gols no total",          check:(s)=>s.totalGoals>=50},
+  {id:"fk_master",     icon:"🎯", name:"Mestre das Faltas",  desc:"Marque 10 gols de falta",          check:(s)=>s.fkGoals>=10},
+  {id:"final_hero",    icon:"🏅", name:"Herói das Finais",   desc:"Marque gol em uma final",          check:(s)=>s.finalGoals>=1},
+  {id:"assist_king",   icon:"👑", name:"Rei das Assistências",desc:"Dê 30 assistências no total",     check:(s)=>s.totalAssists>=30},
+  {id:"500pnuts",      icon:"💎", name:"Diamante",           desc:"Acumule 500 amendoins",            check:(s)=>s.totalPnuts>=500},
+  {id:"synergy10",     icon:"⭐", name:"Apostador Inteligente",desc:"Ganhe 10 bônus de sinergia",     check:(s)=>s.totalSynergy>=10},
+  {id:"corner_god",    icon:"🚩", name:"Deus do Escanteio",  desc:"Marque 5 gols de escanteio",       check:(s)=>s.cornerGoals>=5},
+];
+
+function calcStats(pesHistory){
+  const s = {
+    totalGoals:0, fkGoals:0, cornerGoals:0, totalAssists:0,
+    totalMatches:pesHistory.length, hatTricks:0, finalGoals:0,
+    totalPnuts:0, totalSynergy:0, winStreak:0, wins:0,
+    goalLeft:0, goalRight:0, goalHead:0, goalOutside:0, goalLob:0, goalPost:0,
+  };
+  let streak=0, maxStreak=0;
+  for(const p of [...pesHistory].reverse()){
+    const sm = p.summary||{};
+    s.totalGoals   += (sm.totalGoals||0)||(sm.goals||0)+(sm.fkGoals||0)+(sm.cornerGoals||0);
+    s.fkGoals      += sm.fkGoals||0;
+    s.cornerGoals  += sm.cornerGoals||0;
+    s.goalLeft     += sm.goalLeft||0;
+    s.goalRight    += sm.goalRight||0;
+    s.goalHead     += sm.goalHead||0;
+    s.goalOutside  += sm.goalOutside||0;
+    s.goalLob      += sm.goalLob||0;
+    s.goalPost     += sm.goalPost||0;
+    s.totalAssists += sm.assists||0;
+    s.hatTricks    += sm.hatTrick?1:0;
+    s.finalGoals   += (p.isFinal&&(sm.totalGoals||0)>0)?1:0;
+    s.totalPnuts   += p.earned||0;
+    s.totalSynergy += p.synergyBonus||0;
+    if(p.isWin){ streak++; maxStreak=Math.max(maxStreak,streak); }
+    else streak=0;
+  }
+  s.winStreak=maxStreak;
+  s.wins=pesHistory.filter(p=>p.isWin).length;
+  return s;
+}
+
+const EVENT_TYPES = [
+  {type:"goal",         icon:"⚽", label:"Meu Gol",          color:C.green,   pnLabel:"2🥜", isMyAction:true},
+  {type:"goal_left",    icon:"🦶", label:"Gol Pé Esquerdo",  color:"#059669", pnLabel:"3🥜", isMyAction:true},
+  {type:"goal_right",   icon:"👟", label:"Gol Pé Direito",   color:"#0891b2", pnLabel:"2🥜", isMyAction:true},
+  {type:"goal_head",    icon:"🗣️", label:"Gol de Cabeça",    color:"#7c3aed", pnLabel:"3🥜", isMyAction:true},
+  {type:"goal_outside", icon:"🌟", label:"Gol de Fora Área",color:"#db2777", pnLabel:"4🥜", isMyAction:true},
+  {type:"goal_lob",     icon:"🎩", label:"Gol de Cobertura", color:"#b45309", pnLabel:"5🥜", isMyAction:true},
+  {type:"goal_post",    icon:"🔔", label:"Gol no Travessão", color:"#dc2626", pnLabel:"5🥜", isMyAction:true},
+  {type:"fk_goal",      icon:"🎯", label:"Gol de Falta",     color:"#0284c7", pnLabel:"4🥜", isMyAction:true},
+  {type:"corner_goal",  icon:"🚩", label:"Gol Escanteio",    color:C.purple,  pnLabel:"3🥜", isMyAction:true},
+  {type:"assist",       icon:"🅰️", label:"Assistência",      color:C.accentO, pnLabel:"1🥜", isMyAction:true},
+  {type:"adv_goal",     icon:"🔴", label:"Gol Adversário",   color:C.accent,  pnLabel:null,  isMyAction:false},
+  {type:"yellow",       icon:"🟨", label:"Cartão Amarelo",   color:C.gold,    pnLabel:"-1🥜",isMyAction:false},
+  {type:"red",          icon:"🟥", label:"Cartão Vermelho",  color:C.accent,  pnLabel:"-3🥜",isMyAction:false},
+];
+
+const COMPS = ["Campeonato Nacional","Copa","Champions League","Libertadores","Super Cup","Amistoso"];
+const lbl_s = {display:"block",fontSize:"0.72rem",fontWeight:800,color:C.textMid,letterSpacing:2,marginBottom:5,textTransform:"uppercase"};
+const inp_s = {width:"100%",border:"1px solid rgba(255,255,255,0.6)",borderRadius:10,padding:"10px 14px",fontSize:"0.9rem",color:C.text,background:"rgba(255,255,255,0.65)",backdropFilter:"blur(8px)",boxShadow:"0 2px 8px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.8) inset"};
+
+// ─── STORAGE HELPERS ──────────────────────────────────────────────────────────
+async function storageGet(key){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):null; }catch{ return null; } }
+function storageSet(key,val){ try{ localStorage.setItem(key,JSON.stringify(val)); }catch{} }
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+function App(){
+  const [tab,setTab]           = useState("dashboard");
+  const [balance,setBalance]   = useState(500);
+  const [toast,setToast]       = useState(null);
+  const [loaded,setLoaded]     = useState(false);
+
+  const [matches,setMatches]         = useState([]);
+  const [matchOpen,setMatchOpen]     = useState(false);
+  const [newM,setNewM]               = useState({myTeam:"",opponent:"",competition:"Campeonato Nacional",isFinal:false,isNational:false,matchDate:"",players:[]});
+  const [openMatch,setOpenMatch]     = useState(null);
+  const [liveMinute,setLiveMinute]   = useState(0);
+  const [goalAnim,setGoalAnim]       = useState(false);
+  const [confetti,setConfetti]       = useState([]);
+  const timerRef                     = useRef(null);
+
+  const [betSlip,setBetSlip]         = useState([]);
+  const [stakeInput,setStakeInput]   = useState("");
+  const [marketTab,setMarketTab]     = useState("Resultado Final");
+  const [betHistory,setBetHistory]   = useState([]);
+
+  const [depInput,setDepInput]       = useState("");
+  const [depOpen,setDepOpen]         = useState(false);
+  const [histTab,setHistTab]         = useState("partidas");
+
+  const [pnuts,setPnuts]             = useState(0);
+  const [pesHistory,setPesHistory]   = useState([]);
+  const [pesTab,setPesTab]           = useState("historico");
+
+  const [playerName,setPlayerName]   = useState("Jogador");
+  const [playerNameEdit,setPlayerNameEdit] = useState(false);
+  const [achievements,setAchievements] = useState([]);
+  const [newAchievement,setNewAchievement] = useState(null);
+  const [season,setSeason]           = useState("2024/25");
+  const [seasonArchive,setSeasonArchive] = useState([]);
+  const [endSeasonOpen,setEndSeasonOpen] = useState(false);
+
+  // ── LOAD FROM STORAGE ──
+  useEffect(()=>{
+    (async()=>{
+      const d = await storageGet("pes_manager_data");
+      if(d){
+        if(d.balance!==undefined) setBalance(d.balance);
+        if(d.matches)    setMatches(d.matches);
+        if(d.betHistory) setBetHistory(d.betHistory);
+        if(d.pnuts!==undefined) setPnuts(d.pnuts);
+        if(d.pesHistory) setPesHistory(d.pesHistory);
+        if(d.achievements) setAchievements(d.achievements);
+        if(d.playerName) setPlayerName(d.playerName);
+        if(d.season)     setSeason(d.season);
+        if(d.seasonArchive) setSeasonArchive(d.seasonArchive);
+      }
+      setLoaded(true);
+    })();
+  },[]);
+
+  // ── SAVE TO STORAGE ──
+  useEffect(()=>{
+    if(!loaded) return;
+    storageSet("pes_manager_data",{balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,seasonArchive});
+  },[balance,matches,betHistory,pnuts,pesHistory,achievements,playerName,season,loaded]);
+
+  // ── CHECK ACHIEVEMENTS ──
+  useEffect(()=>{
+    if(!loaded) return;
+    const stats = calcStats(pesHistory);
+    stats.totalPnuts = pnuts;
+    const newOnes = ACHIEVEMENTS.filter(a=>!achievements.includes(a.id)&&a.check(stats));
+    if(newOnes.length>0){
+      setAchievements(ac=>[...ac,...newOnes.map(a=>a.id)]);
+      setNewAchievement(newOnes[0]);
+      setTimeout(()=>setNewAchievement(null),4000);
+    }
+  },[pesHistory,pnuts,loaded]);
+
+  // ── TIMER ──
+  useEffect(()=>{
+    const m=matches.find(x=>x.id===openMatch);
+    if(m?.status==="live"){
+      timerRef.current=setInterval(()=>setLiveMinute(mn=>Math.min(mn+1,120)),60000);
+    } else { clearInterval(timerRef.current); }
+    return ()=>clearInterval(timerRef.current);
+  },[openMatch,matches]);
+
+  const notify=(msg,type="ok")=>{ setToast({msg,type}); setTimeout(()=>setToast(null),3200); };
+
+  // ── ENCERRAR TEMPORADA ──
+  const endSeason=(nextSeason)=>{
+    const seasonStats = calcStats(pesHistory);
+    seasonStats.totalPnuts = pnuts;
+    const archived = {
+      season,
+      archivedAt: new Date().toLocaleString("pt-BR"),
+      matches: [...matches],
+      pesHistory: [...pesHistory],
+      betHistory: [...betHistory],
+      balance,
+      pnuts,
+      stats: seasonStats,
+      achievements: [...achievements],
+    };
+    setSeasonArchive(prev=>[archived,...prev]);
+    // Reset for new season
+    setMatches([]);
+    setPesHistory([]);
+    setBetHistory([]);
+    setPnuts(0);
+    // balance mantido intencionalmente
+    setAchievements([]);
+    setSeason(nextSeason);
+    setEndSeasonOpen(false);
+    notify(`🏁 Temporada ${season} encerrada! Bem-vindo à ${nextSeason}!`,"ok");
+  };
+
+  const triggerGoalAnim=()=>{
+    setGoalAnim(true);
+    const pieces = Array.from({length:14},(_,i)=>({id:i,x:Math.random()*100,color:["#FFD700","#00e676","#3b82f6","#ef4444","#a78bfa"][Math.floor(Math.random()*5)]}));
+    setConfetti(pieces);
+    setTimeout(()=>{ setGoalAnim(false); setConfetti([]); },1200);
+  };
+
+  // ── MATCH ──
+  const createMatch=()=>{
+    if(!newM.myTeam.trim()||!newM.opponent.trim()) return;
+    const m={
+      id:Date.now(), myTeam:newM.myTeam.trim(), opponent:newM.opponent.trim(),
+      competition:newM.competition, isFinal:newM.isFinal, isNational:newM.isNational,
+      matchDate:newM.matchDate, season,
+      createdAt:new Date().toLocaleDateString("pt-BR"),
+      odds:genOdds(newM.myTeam.trim(),newM.opponent.trim(),newM.players||[]),
+      history:Array.from({length:5},()=>["V","E","D"][Math.floor(Math.random()*3)]),
+      status:"prelive", events:[], score:{my:0,adv:0}, isWin:false,
+      preBets:[], pnutsEarned:0, synergyBonus:0,
+      myRating:getRating(newM.myTeam.trim()), oppRating:getRating(newM.opponent.trim()),
+      players:newM.players||[],
+    };
+    setMatches(ms=>[m,...ms]);
+    setNewM({myTeam:"",opponent:"",competition:"Campeonato Nacional",isFinal:false,isNational:false,matchDate:"",players:[]});
+    setMatchOpen(false);
+    notify("Partida criada! Clique para abrir.");
+  };
+
+  const startMatch=(id)=>{
+    const slip=betSlip.filter(b=>b.matchId===id);
+    if(slip.length>0){
+      const s=parseFloat(stakeInput);
+      if(s>0&&s<=balance){
+        const tOdd=+slip.reduce((a,b)=>a*b.odd,1).toFixed(2);
+        const pot=+(s*tOdd).toFixed(2);
+        setBalance(b=>+(b-s).toFixed(2));
+        const bet={id:Date.now(),matchId:id,bets:[...slip],stake:s,totalOdd:tOdd,potential:pot,status:"pending",date:new Date().toLocaleString("pt-BR")};
+        setBetHistory(h=>[bet,...h]);
+        setMatches(ms=>ms.map(m=>m.id===id?{...m,preBets:[...m.preBets,...slip]}:m));
+      }
+    }
+    setMatches(ms=>ms.map(m=>m.id===id?{...m,status:"live"}:m));
+    setBetSlip([]); setStakeInput(""); setLiveMinute(0);
+    notify("🟢 Partida iniciada!");
+  };
+
+  const addEvent=(matchId,eventType)=>{
+    setMatches(ms=>ms.map(m=>{
+      if(m.id!==matchId) return m;
+      const ev={id:Date.now(),type:eventType,minute:liveMinute};
+      const newEvents=[...m.events,ev];
+      const score={...m.score};
+      if(GOAL_TYPES.includes(eventType)) score.my++;
+      if(eventType==="adv_goal") score.adv++;
+      return{...m,events:newEvents,score};
+    }));
+    if(GOAL_TYPES.includes(eventType)) triggerGoalAnim();
+  };
+
+  const removeLastEvent=(matchId,eventType)=>{
+    setMatches(ms=>ms.map(m=>{
+      if(m.id!==matchId) return m;
+      const idx=[...m.events].map(e=>e.type).lastIndexOf(eventType);
+      if(idx===-1) return m;
+      const newEvents=m.events.filter((_,i)=>i!==idx);
+      const score={...m.score};
+      if(GOAL_TYPES.includes(eventType)) score.my=Math.max(0,score.my-1);
+      if(eventType==="adv_goal") score.adv=Math.max(0,score.adv-1);
+      return{...m,events:newEvents,score};
+    }));
+  };
+
+  const finishMatch=(matchId)=>{
+    setMatches(ms=>ms.map(m=>{
+      if(m.id!==matchId) return m;
+      const isWin=m.score.my>m.score.adv;
+      const isDraw=m.score.my===m.score.adv;
+      const pnutResult=calcPnuts(m.events,m.isNational,m.isFinal,isWin);
+      const earned=pnutResult.total;
+      const syn=calcSynergy([...m.preBets,...betSlip.filter(b=>b.matchId===matchId)],m.events,isWin);
+      const total=earned+syn;
+      setPnuts(p=>p+total);
+      const summ=buildSummary(m.events,m.isNational,m.isFinal,isWin);
+      summ.cardDebt=pnutResult.cardDebt;
+      summ.debtCleared=pnutResult.debtCleared;
+      setPesHistory(ph=>[{
+        id:Date.now(),matchId,myTeam:m.myTeam,opponent:m.opponent,
+        competition:m.competition,isFinal:m.isFinal,isNational:m.isNational,
+        matchDate:m.matchDate,season:m.season,
+        score:m.score,isWin,isDraw,events:m.events,
+        earned:total,synergyBonus:syn,pnutsBase:earned,
+        cardDebt:pnutResult.cardDebt,debtCleared:pnutResult.debtCleared,
+        date:new Date().toLocaleString("pt-BR"),summary:summ
+      },...ph]);
+      let msg = `Encerrado! +${total}🥜`;
+      if(syn>0) msg+=` (incl. +${syn} sinergia)`;
+      if(pnutResult.cardDebt>0 && !pnutResult.debtCleared) msg+=` | ⚠️ -${pnutResult.cardDebt}🥜 cartão`;
+      if(pnutResult.debtCleared) msg+=` | ✅ Dívida de cartão quitada pelo gol!`;
+      notify(msg, "ok");
+      return{...m,status:"finished",isWin,isDraw,pnutsEarned:total,synergyBonus:syn};
+    }));
+    setOpenMatch(null);
+  };
+
+  function buildSummary(events,isNat,isFin,isWin){
+    const allGoals = events.filter(e=>GOAL_TYPES.includes(e.type));
+    return{
+      goals:       events.filter(e=>e.type==="goal").length,
+      goalLeft:    events.filter(e=>e.type==="goal_left").length,
+      goalRight:   events.filter(e=>e.type==="goal_right").length,
+      goalHead:    events.filter(e=>e.type==="goal_head").length,
+      goalOutside: events.filter(e=>e.type==="goal_outside").length,
+      goalLob:     events.filter(e=>e.type==="goal_lob").length,
+      goalPost:    events.filter(e=>e.type==="goal_post").length,
+      fkGoals:     events.filter(e=>e.type==="fk_goal").length,
+      cornerGoals: events.filter(e=>e.type==="corner_goal").length,
+      assists:     events.filter(e=>e.type==="assist").length,
+      advGoals:    events.filter(e=>e.type==="adv_goal").length,
+      yellows:     events.filter(e=>e.type==="yellow").length,
+      reds:        events.filter(e=>e.type==="red").length,
+      totalGoals:  allGoals.length,
+      hatTrick:    allGoals.length>=3,
+      doublePack:  allGoals.length===2,
+      hatTrickAssist:events.filter(e=>e.type==="assist").length>=3,
+      isNat,isFin,isWin,
+    };
+  }
+
+  // ── APOSTAS ──
+  const toggleBet=(matchId,market,item)=>{
+    const id=`${matchId}-${item.key}`;
+    if(betSlip.find(b=>b.id===id)) setBetSlip(s=>s.filter(b=>b.id!==id));
+    else{ const m=matches.find(x=>x.id===matchId); setBetSlip(s=>[...s,{id,matchId,myTeam:m.myTeam,opponent:m.opponent,competition:m.competition,market,label:item.label,odd:item.odd,key:item.key}]); }
+  };
+  const isBet=(mid,key)=>betSlip.some(b=>b.id===`${mid}-${key}`);
+  const totalOdd=+betSlip.reduce((a,b)=>a*b.odd,1).toFixed(2);
+  const stakeVal=parseFloat(stakeInput)||0;
+  const potential=+(stakeVal*totalOdd).toFixed(2);
+
+  const settleBet=(id,won)=>{
+    setBetHistory(h=>h.map(b=>{ if(b.id!==id)return b; if(won)setBalance(bal=>+(bal+b.potential).toFixed(2)); return{...b,status:won?"won":"lost"}; }));
+    notify(won?"✅ Aposta ganha!":"❌ Aposta perdida",won?"ok":"err");
+  };
+
+  const currentMatch=matches.find(m=>m.id===openMatch);
+  const stats=calcStats(pesHistory);
+  stats.totalPnuts=pnuts;
+
+  if(!loaded) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"transparent",fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:C.blue,letterSpacing:3}}>Carregando...</div>;
+
+  return(
+    <div style={{fontFamily:"'Nunito',sans-serif",background:"transparent",minHeight:"100vh",color:C.text,position:"relative"}}>
+      <style>{css_vars}</style>
+
+      {/* AERO BACKGROUND BUBBLES */}
+      {[
+        {size:180,top:"8%",left:"2%",dur:"7s",delay:"0s",op:0.35},
+        {size:120,top:"60%",left:"85%",dur:"9s",delay:"1.5s",op:0.28},
+        {size:80, top:"35%",left:"92%",dur:"6s",delay:"3s",op:0.22},
+        {size:220,top:"80%",left:"-3%",dur:"11s",delay:"0.5s",op:0.2},
+        {size:60, top:"15%",left:"75%",dur:"8s",delay:"2s",op:0.18},
+      ].map((b,i)=>(
+        <div key={i} className="aero-bubble" style={{width:b.size,height:b.size,top:b.top,left:b.left,"--dur":b.dur,"--delay":b.delay,opacity:b.op}}/>
+      ))}
+
+      {/* TOAST */}
+      {toast&&<div style={{
+        position:"fixed",top:18,left:"50%",transform:"translateX(-50%)",
+        background:toast.type==="err"
+          ?"linear-gradient(135deg,rgba(244,63,94,0.9),rgba(220,38,38,0.85))"
+          :"linear-gradient(135deg,rgba(2,132,199,0.92),rgba(14,165,233,0.88))",
+        color:"#fff",padding:"11px 24px",borderRadius:20,zIndex:9999,
+        fontWeight:700,fontSize:"0.88rem",
+        boxShadow:"0 8px 32px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.3) inset",
+        animation:"sd 0.3s ease",whiteSpace:"nowrap",
+        border:"1px solid rgba(255,255,255,0.3)",
+        backdropFilter:"blur(16px)",
+      }}>{toast.msg}</div>}
+
+      {/* ACHIEVEMENT POPUP */}
+      {newAchievement&&(
+        <div style={{position:"fixed",bottom:24,right:24,background:"linear-gradient(135deg,#1e429f,#1a56db)",color:"#fff",borderRadius:16,padding:"16px 20px",zIndex:9998,boxShadow:"0 8px 32px rgba(26,86,219,0.4)",animation:"sd 0.4s ease",maxWidth:280}}>
+          <div style={{fontSize:"0.65rem",color:"rgba(255,255,255,0.7)",letterSpacing:2,fontWeight:700,marginBottom:6}}>🏆 CONQUISTA DESBLOQUEADA!</div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:"2rem"}}>{ACHIEVEMENTS.find(a=>a.id===newAchievement.id)?.icon}</span>
+            <div>
+              <div style={{fontWeight:700,fontSize:"0.95rem"}}>{ACHIEVEMENTS.find(a=>a.id===newAchievement.id)?.name}</div>
+              <div style={{fontSize:"0.78rem",opacity:0.8}}>{ACHIEVEMENTS.find(a=>a.id===newAchievement.id)?.desc}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFETTI */}
+      {confetti.map(p=>(
+        <div key={p.id} style={{position:"fixed",top:goalAnim?0:"-100%",left:`${p.x}%`,width:8,height:8,borderRadius:2,background:p.color,zIndex:9997,animation:"confettiFall 1.1s ease forwards",pointerEvents:"none"}}/>
+      ))}
+
+      {/* HEADER */}
+      <header style={{
+        background:"rgba(2,132,199,0.82)",
+        backdropFilter:"blur(24px) saturate(1.8)",
+        WebkitBackdropFilter:"blur(24px) saturate(1.8)",
+        borderBottom:"1px solid rgba(255,255,255,0.3)",
+        padding:"0 20px",display:"flex",alignItems:"center",justifyContent:"space-between",
+        height:62,position:"sticky",top:0,zIndex:100,
+        boxShadow:"0 4px 32px rgba(3,105,161,0.28), 0 1px 0 rgba(255,255,255,0.35) inset",
+      }}>
+        {/* LOGO */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{
+            width:40,height:40,borderRadius:12,
+            background:"linear-gradient(135deg,rgba(255,255,255,0.9),rgba(186,230,253,0.7))",
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.4rem",
+            boxShadow:"0 4px 12px rgba(3,105,161,0.3), 0 1px 0 rgba(255,255,255,0.9) inset",
+            border:"1px solid rgba(255,255,255,0.7)",
+            flexShrink:0,
+          }} className="float">⚽</div>
+          <div>
+            <div style={{
+              fontFamily:"'Orbitron',sans-serif",fontSize:"1.35rem",letterSpacing:4,
+              color:"#fff",lineHeight:1,fontWeight:900,
+              textShadow:"0 0 20px rgba(186,230,253,0.8), 0 2px 4px rgba(0,0,0,0.2)",
+              background:"linear-gradient(180deg,#fff 0%,#bae6fd 100%)",
+              WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",
+            }}>NARRYBET</div>
+            <div style={{fontSize:"0.52rem",letterSpacing:3,color:"rgba(186,230,253,0.9)",fontWeight:700}}>TEMPORADA {season}</div>
+            <div style={{fontSize:"0.48rem",letterSpacing:1,color:"rgba(186,230,253,0.6)",fontStyle:"italic",marginTop:1}}>Mais ladrão que o Tigrinho 🐯</div>
+          </div>
+        </div>
+
+        {/* NAV */}
+        <nav style={{display:"flex",gap:3}}>
+          {[
+            {id:"dashboard",icon:"📊",label:"Dashboard"},
+            {id:"apostas",  icon:"🎲",label:"Apostas"},
+            {id:"estrelato",icon:"⭐",label:"Estrelato"},
+            {id:"duelos",   icon:"⚔️", label:"Duelos"},
+            {id:"perfil",   icon:"👤",label:"Perfil"},
+          ].map(t=>(
+            <button key={t.id} onClick={()=>{setTab(t.id);setOpenMatch(null);}} style={{
+              background:tab===t.id?"rgba(255,255,255,0.28)":"transparent",
+              color:"#fff",border:tab===t.id?"1px solid rgba(255,255,255,0.4)":"1px solid transparent",
+              padding:"6px 12px",borderRadius:10,
+              fontFamily:"'Nunito',sans-serif",fontWeight:700,letterSpacing:0.5,fontSize:"0.82rem",
+              display:"flex",alignItems:"center",gap:4,
+              backdropFilter:tab===t.id?"blur(8px)":"none",
+              boxShadow:tab===t.id?"0 2px 8px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.3) inset":"none",
+              textShadow:"0 1px 3px rgba(0,0,0,0.2)",
+            }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* STATS */}
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {[
+            {label:"SALDO",val:`R$ ${balance.toFixed(0)}`,icon:"💰"},
+            {label:"AMENDOINS",val:`${pnuts}🥜`,icon:null},
+          ].map(s=>(
+            <div key={s.label} style={{
+              textAlign:"right",background:"rgba(255,255,255,0.15)",borderRadius:10,
+              padding:"5px 12px",border:"1px solid rgba(255,255,255,0.25)",
+              backdropFilter:"blur(8px)",
+            }}>
+              <div style={{fontSize:"0.5rem",color:"rgba(186,230,253,0.9)",letterSpacing:2,fontWeight:800}}>{s.label}</div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",color:"#fff",letterSpacing:1,fontWeight:700,textShadow:"0 0 12px rgba(186,230,253,0.6)"}}>{s.val}</div>
+            </div>
+          ))}
+          <button onClick={()=>setDepOpen(true)} style={{
+            background:"linear-gradient(180deg,rgba(255,255,255,0.35),rgba(255,255,255,0.1))",
+            border:"1px solid rgba(255,255,255,0.45)",color:"#fff",borderRadius:10,
+            padding:"7px 14px",fontWeight:800,fontSize:"0.8rem",
+            boxShadow:"0 2px 8px rgba(0,0,0,0.1),0 1px 0 rgba(255,255,255,0.4) inset",
+            textShadow:"0 1px 3px rgba(0,0,0,0.2)",
+          }}>+ Depositar</button>
+          <button onClick={()=>setEndSeasonOpen(true)} style={{
+            background:"linear-gradient(180deg,rgba(251,146,60,0.7),rgba(245,158,11,0.6))",
+            border:"1px solid rgba(255,200,100,0.4)",color:"#fff",borderRadius:10,
+            padding:"7px 14px",fontWeight:800,fontSize:"0.8rem",
+            boxShadow:"0 2px 8px rgba(245,158,11,0.2),0 1px 0 rgba(255,255,255,0.3) inset",
+          }}>🏁 Temporada</button>
+        </div>
+      </header>
+
+      {/* DEPOSIT */}
+      {depOpen&&<Modal onClose={()=>setDepOpen(false)} title="💰 Depósito">
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:14}}>
+          {[50,100,200,500,1000].map(v=>(
+            <button key={v} onClick={()=>setDepInput(String(v))} style={{background:depInput===String(v)?C.blue:C.blueLight,color:depInput===String(v)?"#fff":C.blue,border:`1px solid ${depInput===String(v)?C.blue:C.border}`,borderRadius:8,padding:"7px 14px",fontWeight:700,fontSize:"0.84rem"}}>R$ {v}</button>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input type="number" placeholder="Outro valor..." value={depInput} onChange={e=>setDepInput(e.target.value)} style={{...inp_s,flex:1}}/>
+          <button onClick={()=>{const v=parseFloat(depInput);if(!v||v<=0)return;setBalance(b=>+(b+v).toFixed(2));setDepInput("");setDepOpen(false);notify(`R$ ${v.toFixed(2)} depositado!`);}} style={{background:`linear-gradient(135deg,${C.blue},${C.blueM})`,border:"none",color:"#fff",borderRadius:8,padding:"10px 20px",fontWeight:700}}>OK</button>
+        </div>
+      </Modal>}
+
+      {/* ENCERRAR TEMPORADA */}
+      {endSeasonOpen&&<EndSeasonModal season={season} onClose={()=>setEndSeasonOpen(false)} onConfirm={endSeason} pesHistory={pesHistory} pnuts={pnuts} matches={matches}/>}
+      {matchOpen&&<Modal onClose={()=>setMatchOpen(false)} title="⚽ Nova Partida" wide>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+          <div>
+            <label style={lbl_s}>Meu Time</label>
+            <input value={newM.myTeam} onChange={e=>setNewM(n=>({...n,myTeam:e.target.value}))} placeholder="Ex: Real Madrid" style={inp_s}/>
+            {newM.myTeam&&<div style={{fontSize:"0.72rem",color:C.blue,marginTop:3}}>⚡ Força: {getRating(newM.myTeam)}/100</div>}
+          </div>
+          <div>
+            <label style={lbl_s}>Adversário</label>
+            <input value={newM.opponent} onChange={e=>setNewM(n=>({...n,opponent:e.target.value}))} placeholder="Ex: Barcelona" style={inp_s}/>
+            {newM.opponent&&<div style={{fontSize:"0.72rem",color:C.textSoft,marginTop:3}}>⚡ Força: {getRating(newM.opponent)}/100</div>}
+          </div>
+        </div>
+        {newM.myTeam&&newM.opponent&&(
+          <div style={{background:"rgba(14,165,233,0.08)",borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:"0.8rem",color:C.textMid}}>
+            <strong style={{color:C.blue}}>Preview odds (Resultado Final):</strong>
+            {(()=>{const o=calcSmartOdds(newM.myTeam,newM.opponent); return <span style={{marginLeft:8}}>{newM.myTeam} <strong style={{color:C.blue}}>{o.A}</strong> · Empate <strong style={{color:C.blue}}>{o.D}</strong> · {newM.opponent} <strong style={{color:C.blue}}>{o.B}</strong></span>; })()}
+          </div>
+        )}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+          <div>
+            <label style={lbl_s}>Competição</label>
+            <select value={newM.competition} onChange={e=>setNewM(n=>({...n,competition:e.target.value}))} style={{...inp_s,appearance:"none"}}>
+              {COMPS.map(c=><option key={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={lbl_s}>Data do Jogo (calendário PES)</label>
+            <input type="date" value={newM.matchDate} onChange={e=>setNewM(n=>({...n,matchDate:e.target.value}))} style={inp_s}/>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:20}}>
+          <TogChip active={newM.isFinal} onClick={()=>setNewM(n=>({...n,isFinal:!n.isFinal}))}>🏆 É Final</TogChip>
+          <TogChip active={newM.isNational} onClick={()=>setNewM(n=>({...n,isNational:!n.isNational}))}>🌍 Seleção</TogChip>
+        </div>
+
+        {/* JOGADORES */}
+        <div style={{marginBottom:20}}>
+          <label style={lbl_s}>👤 Jogadores (para odds individuais)</label>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <input id="playerInput" placeholder="Ex: Haaland, Vini Jr..." style={{...inp_s,flex:1}} onKeyDown={e=>{
+              if(e.key==="Enter"&&e.target.value.trim()){
+                const name=e.target.value.trim();
+                if(!newM.players.includes(name)) setNewM(n=>({...n,players:[...n.players,name]}));
+                e.target.value="";
+              }
+            }}/>
+            <button onClick={()=>{
+              const inp=document.getElementById("playerInput");
+              const name=inp?.value.trim();
+              if(name&&!newM.players.includes(name)){setNewM(n=>({...n,players:[...n.players,name]}));if(inp)inp.value="";}
+            }} style={{background:`linear-gradient(135deg,${C.blueMid},${C.blue})`,border:"none",color:"#fff",borderRadius:8,padding:"10px 16px",fontWeight:700}}>+</button>
+          </div>
+          {newM.players.length>0&&(
+            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+              {newM.players.map(pl=>(
+                <span key={pl} style={{background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:20,padding:"4px 12px",fontSize:"0.8rem",display:"flex",alignItems:"center",gap:6}}>
+                  👤 {pl}
+                  <button onClick={()=>setNewM(n=>({...n,players:n.players.filter(x=>x!==pl)}))} style={{background:"none",border:"none",color:C.accent,fontSize:"0.8rem",cursor:"pointer",padding:0,lineHeight:1}}>✕</button>
+                </span>
+              ))}
+            </div>
+          )}
+          {newM.players.length>0&&<div style={{fontSize:"0.7rem",color:C.textSoft,marginTop:4}}>Serão geradas odds de "Marca Gol" e "Dá Assistência" para cada jogador.</div>}
+        </div>
+        <button onClick={createMatch} disabled={!newM.myTeam.trim()||!newM.opponent.trim()} style={{width:"100%",background:newM.myTeam.trim()&&newM.opponent.trim()?`linear-gradient(135deg,${C.blue},${C.blueM})`:"#e2e8f0",border:"none",color:newM.myTeam.trim()&&newM.opponent.trim()?"#fff":C.textSoft,borderRadius:10,padding:"13px",fontWeight:700,fontSize:"1rem",boxShadow:newM.myTeam.trim()&&newM.opponent.trim()?`0 4px 16px rgba(26,86,219,0.3)`:"none"}}>
+          Criar Partida &amp; Gerar Odds Inteligentes →
+        </button>
+      </Modal>}
+
+      <div style={{maxWidth:1440,margin:"0 auto",padding:"22px 20px",position:"relative",zIndex:1}}>
+        {tab==="dashboard"&&<Dashboard matches={matches} pesHistory={pesHistory} pnuts={pnuts} balance={balance} stats={stats} achievements={achievements} season={season} setSeason={setSeason} playerName={playerName} seasonArchive={seasonArchive}/>}
+
+        {tab==="apostas"&&(
+          openMatch&&currentMatch?(
+            <MatchDetail
+              match={currentMatch} liveMinute={liveMinute} setLiveMinute={setLiveMinute}
+              betSlip={betSlip} stakeInput={stakeInput} setStakeInput={setStakeInput}
+              marketTab={marketTab} setMarketTab={setMarketTab}
+              isBet={isBet} toggleBet={toggleBet} totalOdd={totalOdd} potential={potential} stakeVal={stakeVal}
+              balance={balance} startMatch={startMatch} addEvent={addEvent}
+              removeLastEvent={removeLastEvent} finishMatch={finishMatch}
+              onBack={()=>setOpenMatch(null)} goalAnim={goalAnim}
+            />
+          ):(
+            <ApostasTab
+              matches={matches} betHistory={betHistory} histTab={histTab} setHistTab={setHistTab}
+              onOpen={id=>{setOpenMatch(id);setMarketTab("Resultado Final");setBetSlip([]);setStakeInput("");setLiveMinute(0);}}
+              onNew={()=>setMatchOpen(true)} settleBet={settleBet} balance={balance} pnuts={pnuts}
+              depOpen={()=>setDepOpen(true)}
+            />
+          )
+        )}
+
+        {tab==="estrelato"&&<EstrelatoTab pesHistory={pesHistory} pnuts={pnuts} pesTab={pesTab} setPesTab={setPesTab} stats={stats}/>}
+        {tab==="duelos"&&<DuelosTab pesHistory={pesHistory}/>}
+        {tab==="perfil"&&<PerfilTab playerName={playerName} setPlayerName={setPlayerName} playerNameEdit={playerNameEdit} setPlayerNameEdit={setPlayerNameEdit} stats={stats} achievements={achievements} season={season} setSeason={setSeason} pnuts={pnuts} balance={balance} seasonArchive={seasonArchive}/>}
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────────────
+function Dashboard({matches,pesHistory,pnuts,balance,stats,achievements,season,setSeason,playerName,seasonArchive}){
+  const recent = pesHistory.slice(0,5);
+  const upcoming = matches.filter(m=>m.status==="prelive"&&m.matchDate).sort((a,b)=>a.matchDate<b.matchDate?-1:1).slice(0,4);
+  const live = matches.filter(m=>m.status==="live");
+
+  // Gols por competição
+  const byComp = {};
+  for(const p of pesHistory){
+    const c=p.competition;
+    if(!byComp[c]) byComp[c]={comp:c,goals:0,matches:0,wins:0};
+    byComp[c].goals+=(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0);
+    byComp[c].matches++;
+    if(p.isWin) byComp[c].wins++;
+  }
+  const compArr = Object.values(byComp).sort((a,b)=>b.matches-a.matches).slice(0,5);
+
+  const winRate = stats.totalMatches>0?Math.round(stats.wins/stats.totalMatches*100):0;
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:22}}>
+        <div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",letterSpacing:3,color:C.blueDark,lineHeight:1,fontWeight:900,textShadow:"0 2px 8px rgba(14,165,233,0.2)"}}>Bem-vindo, {playerName}!</div>
+          <div style={{color:C.textSoft,fontSize:"0.84rem",marginTop:4,fontWeight:600}}>Temporada {season} · NARRYBET</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontSize:"0.78rem",color:C.textMid,fontWeight:700}}>Temporada:</span>
+          <input value={season} onChange={e=>setSeason(e.target.value)} style={{...inp_s,width:110,padding:"6px 10px",fontSize:"0.85rem"}}/>
+        </div>
+      </div>
+
+      {live.length>0&&(
+        <div style={{background:"linear-gradient(135deg,#fee2e2,#fff)",border:`2px solid ${C.live}`,borderRadius:14,padding:"14px 18px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
+          <span className="live-dot" style={{width:10,height:10,borderRadius:"50%",background:C.live,display:"inline-block",flexShrink:0}}/>
+          <div style={{flex:1,fontWeight:700,color:C.live}}>{live[0].myTeam} vs {live[0].opponent} — AO VIVO {live[0].score.my}:{live[0].score.adv}</div>
+        </div>
+      )}
+
+      {/* KPIs */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:12,marginBottom:22}}>
+        {[
+          {icon:"🥜",val:pnuts,label:"Amendoins",col:C.gold,bg:"rgba(245,158,11,0.12)"},
+          {icon:"💰",val:`R$${balance.toFixed(0)}`,label:"Saldo",col:C.blue,bg:C.blueLight},
+          {icon:"⚽",val:stats.totalGoals,label:"Gols Totais",col:C.green,bg:C.greenL},
+          {icon:"🅰️",val:stats.totalAssists,label:"Assistências",col:C.accentO,bg:"#fff7ed"},
+          {icon:"🕹️",val:stats.totalMatches,label:"Partidas",col:C.blueDark,bg:C.blueLight},
+          {icon:"📈",val:`${winRate}%`,label:"Taxa de Vitória",col:C.purple,bg:C.purpleL},
+          {icon:"🏆",val:achievements.length,label:"Conquistas",col:C.gold,bg:C.goldL},
+          {icon:"🔥",val:stats.winStreak,label:"Maior Sequência",col:C.accent,bg:C.liveL},
+        ].map(s=>(
+          <div key={s.label} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:10,boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+            <div style={{width:36,height:36,background:s.bg,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.1rem",flexShrink:0}}>{s.icon}</div>
+            <div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.6rem",color:s.col,lineHeight:1,letterSpacing:1}}>{s.val}</div>
+              <div style={{fontSize:"0.62rem",color:C.textSoft,fontWeight:700,letterSpacing:0.5}}>{s.label.toUpperCase()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:18}}>
+        {/* Próximas */}
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:12}}>📅 Próximas Partidas</div>
+          {upcoming.length===0?<Empty>Nenhuma partida agendada</Empty>:(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {upcoming.map(m=>(
+                <div key={m.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",background:"rgba(14,165,233,0.08)",borderRadius:10}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:"0.86rem"}}>{m.myTeam} vs {m.opponent}</div>
+                    <div style={{fontSize:"0.7rem",color:C.textSoft}}>{m.competition}</div>
+                  </div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.95rem",color:C.blue,letterSpacing:1}}>{m.matchDate?new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}):"—"}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Por competição */}
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:12}}>🏆 Por Competição</div>
+          {compArr.length===0?<Empty>Nenhuma partida encerrada</Empty>:(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {compArr.map(c=>(
+                <div key={c.comp} style={{display:"flex",alignItems:"center",gap:10}}>
+                  <div style={{flex:1,fontSize:"0.82rem",fontWeight:600,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.comp}</div>
+                  <div style={{fontSize:"0.72rem",color:C.textSoft,minWidth:60,textAlign:"right"}}>{c.wins}V / {c.matches-c.wins}D</div>
+                  <div style={{fontSize:"0.72rem",color:C.green,minWidth:40,textAlign:"right",fontWeight:700}}>{c.goals}⚽</div>
+                  <div style={{width:60,height:6,background:C.border,borderRadius:4,overflow:"hidden",flexShrink:0}}>
+                    <div style={{width:`${c.matches>0?Math.round(c.wins/c.matches*100):0}%`,height:"100%",background:C.green,borderRadius:4}}/>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Últimas partidas */}
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:12}}>🕹️ Últimas Partidas</div>
+        {recent.length===0?<Empty>Nenhuma partida encerrada</Empty>:(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {recent.map(p=>{
+              const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+              return(
+                <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"8px 12px",background:"rgba(14,165,233,0.08)",borderRadius:10}}>
+                  <div style={{width:8,height:8,borderRadius:"50%",background:rc,flexShrink:0}}/>
+                  <div style={{flex:1}}>
+                    <span style={{fontWeight:700,fontSize:"0.86rem"}}>{p.myTeam}</span>
+                    <span style={{color:C.textSoft,fontSize:"0.82rem"}}> vs {p.opponent}</span>
+                    <span style={{fontSize:"0.72rem",color:C.textSoft,marginLeft:6}}>· {p.competition}</span>
+                  </div>
+                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",color:rc,letterSpacing:1}}>{p.score.my}–{p.score.adv}</div>
+                  {p.earned>0&&<div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.95rem",color:C.gold}}>+{p.earned}🥜</div>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Arquivo de Temporadas */}
+      {seasonArchive&&seasonArchive.length>0&&(
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)",marginTop:18}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.gold,marginBottom:12}}>📼 Temporadas Anteriores</div>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {seasonArchive.map((arc,i)=>{
+              const wr=arc.stats.totalMatches>0?Math.round(arc.stats.wins/arc.stats.totalMatches*100):0;
+              return(
+                <div key={i} style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"}}>
+                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",letterSpacing:2,color:C.blue,minWidth:90}}>{arc.season}</div>
+                  <div style={{display:"flex",gap:16,flex:1,flexWrap:"wrap"}}>
+                    <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.text}}>{arc.stats.totalMatches}</strong> partidas</span>
+                    <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.green}}>{arc.stats.totalGoals}⚽</strong></span>
+                    <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.gold}}>{arc.pnuts}🥜</strong></span>
+                    <span style={{fontSize:"0.8rem",color:C.textMid}}><strong style={{color:C.purple}}>{wr}% V</strong></span>
+                    {arc.stats.hatTricks>0&&<span style={{fontSize:"0.8rem",color:C.purple}}>🔥 {arc.stats.hatTricks} hat-trick{arc.stats.hatTricks>1?"s":""}</span>}
+                  </div>
+                  <span style={{fontSize:"0.68rem",color:C.textSoft}}>{arc.archivedAt}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── END SEASON MODAL ─────────────────────────────────────────────────────────
+function EndSeasonModal({season,onClose,onConfirm,pesHistory,pnuts,matches}){
+  const [nextSeason,setNextSeason] = useState(()=>{
+    // Auto-suggest next season: "2024/25" -> "2025/26"
+    const m = season.match(/^(\d{4})\/(\d{2})$/);
+    if(m){
+      const y=parseInt(m[1])+1;
+      return `${y}/${String(y+1).slice(-2)}`;
+    }
+    return season+" (Nova)";
+  });
+  const stats = calcStats(pesHistory);
+  const wr = stats.totalMatches>0?Math.round(stats.wins/stats.totalMatches*100):0;
+  return(
+    <Modal onClose={onClose} title="🏁 Encerrar Temporada">
+      <div style={{background:"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(251,191,36,0.1))",border:"1px solid rgba(245,158,11,0.3)",borderRadius:14,padding:"14px 16px",marginBottom:18,backdropFilter:"blur(8px)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:2,color:C.gold,marginBottom:8}}>Resumo da Temporada {season}</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {[
+            {label:"Partidas",val:stats.totalMatches},
+            {label:"Vitórias",val:`${stats.wins} (${wr}%)`},
+            {label:"Gols",val:stats.totalGoals},
+            {label:"Assistências",val:stats.totalAssists},
+            {label:"Amendoins",val:`${pnuts}🥜`},
+            {label:"Hat-tricks",val:stats.hatTricks},
+          ].map(x=>(
+            <div key={x.label} style={{background:"rgba(255,255,255,0.65)",borderRadius:8,padding:"8px 10px"}}>
+              <div style={{fontSize:"0.63rem",color:C.textSoft,fontWeight:700,letterSpacing:1}}>{x.label.toUpperCase()}</div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",color:C.blue,letterSpacing:1}}>{x.val}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{marginBottom:18}}>
+        <label style={lbl_s}>Nome da Próxima Temporada</label>
+        <input value={nextSeason} onChange={e=>setNextSeason(e.target.value)} style={inp_s} placeholder="Ex: 2025/26"/>
+      </div>
+      <div style={{background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:10,padding:"10px 14px",marginBottom:18,fontSize:"0.8rem",color:C.accent}}>
+        ⚠️ Isso vai <strong>arquivar</strong> toda a temporada atual e iniciar uma nova do zero (partidas, amendoins, saldo resetados). Não pode ser desfeito.
+      </div>
+      <div style={{display:"flex",gap:10}}>
+        <button onClick={onClose} style={{flex:1,background:"#f1f5f9",border:"1px solid rgba(255,255,255,0.5)",color:C.textMid,borderRadius:10,padding:"11px",fontWeight:700}}>Cancelar</button>
+        <button onClick={()=>nextSeason.trim()&&onConfirm(nextSeason.trim())} disabled={!nextSeason.trim()} style={{flex:1,background:`linear-gradient(135deg,#b45309,#d97706)`,border:"none",color:"#fff",borderRadius:10,padding:"11px",fontWeight:700,fontSize:"0.95rem"}}>🏁 Encerrar & Iniciar Nova</button>
+      </div>
+    </Modal>
+  );
+}
+
+// ─── APOSTAS TAB ──────────────────────────────────────────────────────────────
+function ApostasTab({matches,betHistory,histTab,setHistTab,onOpen,onNew,settleBet,balance,pnuts,depOpen}){
+  return(
+    <div style={{display:"grid",gridTemplateColumns:"1fr 190px",gap:20}}>
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+          <div>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",letterSpacing:2,color:C.blueDark,fontWeight:900}}>Minhas Partidas</div>
+            <div style={{color:C.textSoft,fontSize:"0.8rem"}}>{matches.length} partida{matches.length!==1?"s":""}</div>
+          </div>
+          <button onClick={onNew} style={{background:"linear-gradient(180deg,#38bdf8,#0284c7)",border:"1px solid rgba(56,189,248,0.5)",color:"#fff",borderRadius:12,padding:"10px 18px",fontWeight:800,fontSize:"0.88rem",display:"flex",alignItems:"center",gap:7,boxShadow:"0 6px 20px rgba(14,165,233,0.35),0 1px 0 rgba(255,255,255,0.4) inset"}}>
+            ＋ Nova Partida
+          </button>
+        </div>
+
+        {matches.length===0?(
+          <div style={{background:"rgba(255,255,255,0.65)",border:`2px dashed ${C.border}`,borderRadius:16,padding:"52px 20px",textAlign:"center"}}>
+            <div style={{fontSize:"3rem",marginBottom:10}}>⚽</div>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.4rem",letterSpacing:2,color:C.blue,marginBottom:8}}>Nenhuma Partida</div>
+            <div style={{color:C.textSoft,fontSize:"0.86rem",marginBottom:18}}>Crie uma partida para apostar e registrar sua gameplay</div>
+            <button onClick={onNew} style={{background:`linear-gradient(135deg,${C.blue},${C.blueM})`,border:"none",color:"#fff",borderRadius:10,padding:"11px 26px",fontWeight:700,fontSize:"0.9rem"}}>Criar Primeira Partida</button>
+          </div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            {matches.map(m=><MatchSummaryCard key={m.id} match={m} onClick={()=>onOpen(m.id)}/>)}
+          </div>
+        )}
+
+        <div style={{marginTop:28}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.4rem",letterSpacing:3,color:C.blue,marginBottom:14}}>Histórico</div>
+          <div style={{display:"flex",gap:8,marginBottom:12,borderBottom:`1px solid ${C.border}`,paddingBottom:10}}>
+            {["partidas","apostas"].map(t=>(
+              <button key={t} onClick={()=>setHistTab(t)} style={{background:histTab===t?C.blue:"transparent",color:histTab===t?"#fff":C.textMid,border:`1px solid ${histTab===t?C.blue:C.border}`,borderRadius:8,padding:"6px 16px",fontWeight:600,fontSize:"0.82rem"}}>
+                {t==="partidas"?"⚽ Partidas Encerradas":"🎲 Apostas"}
+              </button>
+            ))}
+          </div>
+          {histTab==="apostas"?(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {betHistory.length===0?<Empty>Nenhuma aposta registrada</Empty>:betHistory.map(b=><BetCard key={b.id} bet={b} settleBet={settleBet}/>)}
+            </div>
+          ):(
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {matches.filter(m=>m.status==="finished").length===0?<Empty>Nenhuma partida encerrada</Empty>:
+                matches.filter(m=>m.status==="finished").map(m=>{
+                  const rc=m.isWin?C.green:m.isDraw?C.gold:C.accent;
+                  return(
+                    <div key={m.id} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"13px 16px",backdropFilter:"blur(10px)",border:"1px solid rgba(255,255,255,0.5)",display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:rc,flexShrink:0}}/>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:700,fontSize:"0.9rem"}}>{m.myTeam} vs {m.opponent}</div>
+                        <div style={{fontSize:"0.72rem",color:C.textSoft}}>{m.competition} · {m.matchDate?new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR"):(m.createdAt||"")}</div>
+                      </div>
+                      <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",color:rc,letterSpacing:1}}>{m.score.my}–{m.score.adv}</div>
+                      {m.pnutsEarned>0&&<div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",color:C.gold}}>+{m.pnutsEarned}🥜</div>}
+                    </div>
+                  );
+                })
+              }
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sidebar saldo */}
+      <div style={{position:"sticky",top:72}}>
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)",boxShadow:"0 4px 20px rgba(26,86,219,0.07)"}}>
+          <div style={{background:`linear-gradient(135deg,${C.blue},${C.blueM})`,padding:"14px 16px"}}>
+            <div style={{fontSize:"0.6rem",color:"rgba(255,255,255,0.7)",fontWeight:700,letterSpacing:2}}>SALDO</div>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:"#fff",letterSpacing:1}}>R$ {balance.toFixed(2)}</div>
+          </div>
+          <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+            <div style={{fontSize:"0.6rem",color:C.textSoft,fontWeight:700,letterSpacing:2,marginBottom:4}}>AMENDOINS</div>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:C.gold,letterSpacing:1}}>{pnuts} 🥜</div>
+          </div>
+          <div style={{padding:"10px 12px"}}>
+            <button onClick={depOpen} style={{width:"100%",background:`linear-gradient(135deg,${C.blue},${C.blueM})`,border:"none",color:"#fff",borderRadius:8,padding:"9px",fontWeight:700,fontSize:"0.84rem"}}>+ Depositar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MATCH SUMMARY CARD ───────────────────────────────────────────────────────
+function MatchSummaryCard({match:m,onClick}){
+  const sc={
+    prelive:{bg:C.blueLight,col:C.blue,label:"PRÉ-LIVE"},
+    live:{bg:C.liveL,col:C.live,label:"● AO VIVO"},
+    finished:{bg:C.greenL,col:C.green,label:"ENCERRADO"},
+  };
+  const s=sc[m.status];
+  return(
+    <div className="mc" onClick={onClick} style={{background:"rgba(255,255,255,0.65)",border:`1px solid ${m.status==="live"?C.live:C.border}`,borderRadius:14,padding:"13px 18px",cursor:"pointer",transition:"all 0.2s",boxShadow:m.status==="live"?"0 4px 20px rgba(239,68,68,0.1)":"0 1px 4px rgba(0,0,0,0.04)"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{display:"flex",gap:5,flexShrink:0,flexWrap:"wrap"}}>
+          <span style={{background:s.bg,color:s.col,fontSize:"0.67rem",fontWeight:700,padding:"3px 8px",borderRadius:20,display:"flex",alignItems:"center",gap:3}}>
+            {m.status==="live"&&<span className="live-dot" style={{width:6,height:6,borderRadius:"50%",background:C.live,display:"inline-block"}}/>}
+            {s.label}
+          </span>
+          {m.isFinal&&<Chip color="#b45309" bg="#fef3c7">🏆 Final</Chip>}
+          {m.isNational&&<Chip color="#0284c7" bg="#e0f2fe">🌍 Seleção</Chip>}
+          <Chip color={C.blue} bg={C.blueLight}>{m.competition}</Chip>
+        </div>
+        <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:14}}>
+          <div style={{textAlign:"right",flex:1}}>
+            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1rem"}}>{m.myTeam}</div>
+            <div style={{fontSize:"0.65rem",color:C.textSoft}}>⚡{m.myRating}</div>
+          </div>
+          {m.status!=="prelive"?(
+            <div style={{background:m.status==="live"?C.live:C.blueDark,color:"#fff",borderRadius:8,padding:"4px 14px",fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",letterSpacing:2}}>{m.score.my}–{m.score.adv}</div>
+          ):(
+            <div style={{textAlign:"center"}}>
+              <div style={{background:"rgba(14,165,233,0.08)",borderRadius:6,padding:"3px 10px",fontFamily:"'Orbitron',sans-serif",fontSize:"0.78rem",color:C.blue,letterSpacing:2}}>VS</div>
+              {m.matchDate&&<div style={{fontSize:"0.65rem",color:C.textSoft,marginTop:2}}>{new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})}</div>}
+            </div>
+          )}
+          <div style={{textAlign:"left",flex:1}}>
+            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1rem"}}>{m.opponent}</div>
+            <div style={{fontSize:"0.65rem",color:C.textSoft}}>⚡{m.oppRating}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+          {m.status==="finished"&&m.pnutsEarned>0&&<span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",color:C.gold}}>+{m.pnutsEarned}🥜</span>}
+          <span style={{color:C.blue,fontSize:"0.8rem"}}>→</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MATCH DETAIL ─────────────────────────────────────────────────────────────
+function MatchDetail({match:m,liveMinute,setLiveMinute,betSlip,stakeInput,setStakeInput,marketTab,setMarketTab,isBet,toggleBet,totalOdd,potential,stakeVal,balance,startMatch,addEvent,removeLastEvent,finishMatch,onBack,goalAnim}){
+  const [confirmFinish,setConfirmFinish]=useState(false);
+  const markets=Object.keys(m.odds);
+  const isLive=m.status==="live";
+  const isFinished=m.status==="finished";
+  const isPre=m.status==="prelive";
+  const myGoals=m.events.filter(e=>["goal","fk_goal","corner_goal"].includes(e.type)).length;
+  const matchBetSlip=betSlip.filter(b=>b.matchId===m.id);
+
+  return(
+    <div style={{animation:"fi 0.2s ease"}}>
+      {/* Breadcrumb */}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16}}>
+        <button onClick={onBack} style={{background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",color:C.blue,borderRadius:8,padding:"6px 12px",fontWeight:600,fontSize:"0.82rem"}}>← Voltar</button>
+        <span style={{color:C.textSoft,fontSize:"0.82rem"}}>{m.competition}</span>
+        <span style={{color:C.textSoft}}>›</span>
+        <span style={{fontWeight:600,fontSize:"0.82rem"}}>{m.myTeam} vs {m.opponent}</span>
+        {isLive&&<span style={{background:C.liveL,color:C.live,fontSize:"0.68rem",fontWeight:700,padding:"3px 10px",borderRadius:20,display:"flex",alignItems:"center",gap:4}}>
+          <span className="live-dot" style={{width:7,height:7,background:C.live,borderRadius:"50%",display:"inline-block"}}/>AO VIVO {liveMinute}'
+        </span>}
+      </div>
+
+      {/* Scoreboard */}
+      <div className={goalAnim?"goal-flash":""} style={{background:"rgba(255,255,255,0.65)",border:`1px solid ${isLive?C.live:C.border}`,borderRadius:16,padding:"20px 24px",marginBottom:18,boxShadow:isLive?"0 4px 24px rgba(239,68,68,0.1)":"0 2px 8px rgba(26,86,219,0.06)",transition:"all 0.3s"}}>
+        <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:14}}>
+          {m.isFinal&&<Chip color="#b45309" bg="#fef3c7">🏆 Final</Chip>}
+          {m.isNational&&<Chip color="#0284c7" bg="#e0f2fe">🌍 Seleção</Chip>}
+          <Chip color={C.blue} bg={C.blueLight}>{m.competition}</Chip>
+          {m.matchDate&&<Chip color={C.textMid} bg="#f1f5f9">{new Date(m.matchDate+"T12:00:00").toLocaleDateString("pt-BR")}</Chip>}
+        </div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:24}}>
+          <div style={{textAlign:"center",flex:1}}>
+            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.myTeam}</div>
+            <div style={{fontSize:"0.68rem",color:C.blue,fontWeight:600}}>MEU TIME · ⚡{m.myRating}</div>
+          </div>
+          <div style={{textAlign:"center"}}>
+            {isPre?(
+              <div style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"12px 28px"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:C.blue,letterSpacing:3}}>PRÉ-LIVE</div>
+              </div>
+            ):(
+              <div className={goalAnim?"goal-pop":""} style={{background:isLive?C.live:C.blueDark,color:"#fff",borderRadius:12,padding:"10px 28px",minWidth:120,transition:"background 0.3s"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"3rem",letterSpacing:3,lineHeight:1}}>{m.score.my}–{m.score.adv}</div>
+                {isLive&&<div style={{fontSize:"0.72rem",opacity:0.85,marginTop:2,textAlign:"center"}}>{liveMinute}'</div>}
+              </div>
+            )}
+          </div>
+          <div style={{textAlign:"center",flex:1}}>
+            <div style={{fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:"1.5rem"}}>{m.opponent}</div>
+            <div style={{fontSize:"0.68rem",color:C.textSoft,fontWeight:600}}>ADVERSÁRIO · ⚡{m.oppRating}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:6,marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`}}>
+          <span style={{fontSize:"0.68rem",color:C.textSoft,marginRight:4}}>ÚLTIMOS:</span>
+          {m.history.map((r,i)=>(
+            <div key={i} style={{width:24,height:24,borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",background:r==="V"?C.greenL:r==="E"?C.goldL:C.liveL,color:r==="V"?C.green:r==="E"?C.gold:C.accent,fontWeight:700,fontSize:"0.7rem"}}>{r}</div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 295px",gap:18,alignItems:"start"}}>
+        <div>
+          {/* ODDS TABS (pre + finished) */}
+          {(isPre||isFinished)&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)",marginBottom:18}}>
+              <div style={{borderBottom:`1px solid ${C.border}`,padding:"0 18px",display:"flex",gap:0,overflowX:"auto"}}>
+                {markets.map(mk=>(
+                  <button key={mk} onClick={()=>setMarketTab(mk)} style={{background:"transparent",border:"none",borderBottom:`3px solid ${marketTab===mk?C.blue:"transparent"}`,color:marketTab===mk?C.blue:C.textMid,padding:"11px 14px",fontWeight:600,fontSize:"0.82rem",whiteSpace:"nowrap"}}>{mk}</button>
+                ))}
+              </div>
+              <div style={{padding:"14px 18px"}}>
+                {marketTab==="Total de Gols"?(
+                  <div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6,marginBottom:6}}>
+                      <div style={{background:"rgba(14,165,233,0.08)",borderRadius:8,padding:"5px",fontSize:"0.7rem",color:C.blue,fontWeight:700,textAlign:"center"}}>MAIS GOLS</div>
+                      <div style={{background:"rgba(14,165,233,0.08)",borderRadius:8,padding:"5px",fontSize:"0.7rem",color:C.blue,fontWeight:700,textAlign:"center"}}>MENOS GOLS</div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+                      {m.odds["Total de Gols"].map(o=>(
+                        <button key={o.key} className="ob" onClick={()=>!isFinished&&toggleBet(m.id,"Total de Gols",o)} style={{background:isBet(m.id,o.key)?C.blue:"#fff",border:`1px solid ${isBet(m.id,o.key)?C.blue:C.border}`,borderRadius:8,padding:"8px 12px",color:isBet(m.id,o.key)?"#fff":C.text,display:"flex",justifyContent:"space-between",alignItems:"center",opacity:isFinished?0.6:1}}>
+                          <span style={{fontSize:"0.82rem",fontWeight:600}}>{o.label} Gols</span>
+                          <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.15rem",letterSpacing:1}}>{o.odd}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ):(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:8}}>
+                    {m.odds[marketTab].map(o=>(
+                      <button key={o.key} className="ob" onClick={()=>!isFinished&&toggleBet(m.id,marketTab,o)} style={{background:isBet(m.id,o.key)?C.blue:"#fff",border:`1px solid ${isBet(m.id,o.key)?C.blue:C.border}`,borderRadius:8,padding:"9px 12px",color:isBet(m.id,o.key)?"#fff":C.text,textAlign:"center",opacity:isFinished?0.6:1}}>
+                        <div style={{fontSize:"0.68rem",opacity:0.6,fontWeight:600,marginBottom:3}}>{o.label}</div>
+                        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",letterSpacing:1,lineHeight:1}}>{o.odd}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* AO VIVO EVENTOS */}
+          {isLive&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:`2px solid ${C.live}`,borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)",marginBottom:18}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.live,marginBottom:16}}>⚡ REGISTRAR EVENTO</div>
+
+              {/* MINUTAGEM SLIDER */}
+              <MinuteSlider minute={liveMinute} onChange={setLiveMinute}/>
+
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:8,marginTop:16}}>
+                {EVENT_TYPES.map(et=>{
+                  const count=m.events.filter(e=>e.type===et.type).length;
+                  return(
+                    <div key={et.type}>
+                      <button onClick={()=>addEvent(m.id,et.type)} style={{
+                        width:"100%",background:et.isMyAction?"#fff":"#fafafa",
+                        border:`2px solid ${et.color}`,borderRadius:12,padding:"12px 8px",
+                        color:C.text,textAlign:"center",position:"relative",
+                        boxShadow:et.isMyAction?`0 2px 8px ${et.color}22`:"none"
+                      }}>
+                        <div style={{fontSize:"1.6rem",marginBottom:4}}>{et.icon}</div>
+                        <div style={{fontSize:"0.74rem",fontWeight:700,color:et.color,marginBottom:et.pnLabel?2:0}}>{et.label}</div>
+                        {et.pnLabel&&<div style={{display:"inline-block",background:C.goldL,color:C.gold,borderRadius:10,padding:"1px 8px",fontSize:"0.65rem",fontWeight:700}}>{et.pnLabel}</div>}
+                        {count>0&&<div style={{position:"absolute",top:6,right:8,background:et.color,color:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"0.72rem",fontWeight:700}}>{count}</div>}
+                      </button>
+                      {count>0&&<button onClick={()=>removeLastEvent(m.id,et.type)} style={{width:"100%",background:"transparent",border:"none",color:C.textSoft,fontSize:"0.67rem",padding:"3px 0",marginTop:2}}>↩ desfazer</button>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* TIMELINE */}
+          {m.events.length>0&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)",marginBottom:18}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",letterSpacing:3,color:C.blue,marginBottom:12}}>📋 LINHA DO TEMPO</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {[...m.events].reverse().map(ev=>{
+                  const et=EVENT_TYPES.find(x=>x.type===ev.type)||{icon:"•",label:ev.type,color:C.textSoft};
+                  return(
+                    <div key={ev.id} style={{display:"flex",alignItems:"center",gap:10,padding:"7px 12px",background:"rgba(14,165,233,0.08)",borderRadius:8,borderLeft:`3px solid ${et.color}`}}>
+                      <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.95rem",color:C.textSoft,minWidth:30}}>{ev.minute}'</span>
+                      <span style={{fontSize:"1rem"}}>{et.icon}</span>
+                      <span style={{fontSize:"0.82rem",fontWeight:600,color:et.color}}>{et.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {isFinished&&(
+            <div style={{background:C.greenL,border:"1px solid #86efac",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)",textAlign:"center"}}>
+              <div style={{fontSize:"2rem",marginBottom:6}}>✅</div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",color:C.green,letterSpacing:2,marginBottom:4}}>Partida Encerrada</div>
+              {m.pnutsEarned>0&&<div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:C.gold}}>+{m.pnutsEarned} 🥜</div>}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT */}
+        <div style={{display:"flex",flexDirection:"column",gap:14,position:"sticky",top:72}}>
+          {isPre&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)",boxShadow:"0 4px 16px rgba(26,86,219,0.07)"}}>
+              <div style={{background:`linear-gradient(135deg,${C.blue},${C.blueM})`,padding:"12px 16px"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:"#fff"}}>🎟️ BOLETIM PRÉ-LIVE</div>
+              </div>
+              <div style={{padding:14}}>
+                {matchBetSlip.length===0?(
+                  <div style={{textAlign:"center",padding:"20px 0",color:C.textSoft}}>
+                    <div style={{fontSize:"2rem",marginBottom:6}}>🎯</div>
+                    <div style={{fontSize:"0.78rem"}}>Selecione odds antes de iniciar</div>
+                  </div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:6,maxHeight:200,overflowY:"auto",marginBottom:10}}>
+                    {matchBetSlip.map(b=>(
+                      <div key={b.id} style={{background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:8,padding:"7px 10px"}}>
+                        <div style={{fontSize:"0.68rem",color:C.textSoft,marginBottom:2}}>{b.market}</div>
+                        <div style={{display:"flex",justifyContent:"space-between"}}>
+                          <span style={{fontWeight:600,color:C.text,fontSize:"0.8rem"}}>{b.label}</span>
+                          <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",color:C.blue,letterSpacing:1}}>{b.odd}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {matchBetSlip.length>0&&(
+                  <>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.76rem",color:C.textMid,marginBottom:8}}>
+                      <span>Odd Total</span>
+                      <strong style={{color:C.blue,fontFamily:"'Orbitron',sans-serif",fontSize:"1rem"}}>{totalOdd}</strong>
+                    </div>
+                    <input type="number" placeholder="Valor R$" value={stakeInput} onChange={e=>setStakeInput(e.target.value)} style={{...inp_s,marginBottom:8,fontSize:"0.87rem"}}/>
+                    {stakeVal>0&&(
+                      <div style={{background:C.greenL,border:"1px solid #86efac",borderRadius:8,padding:"7px 10px",display:"flex",justifyContent:"space-between",marginBottom:8}}>
+                        <span style={{fontSize:"0.72rem",color:"#166534",fontWeight:600}}>Ganho pot.</span>
+                        <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",color:C.green}}>R$ {potential}</span>
+                      </div>
+                    )}
+                    {stakeVal>balance&&<div style={{color:C.accent,fontSize:"0.71rem",marginBottom:6,fontWeight:600}}>⚠️ Saldo insuficiente</div>}
+                  </>
+                )}
+                <button onClick={()=>startMatch(m.id)} style={{width:"100%",background:"linear-gradient(135deg,#16a34a,#22c55e)",border:"none",color:"#fff",borderRadius:10,padding:"12px",fontWeight:700,fontSize:"0.95rem",marginTop:4,boxShadow:"0 4px 16px rgba(22,163,74,0.3)"}}>
+                  🟢 INICIAR PARTIDA
+                </button>
+              </div>
+            </div>
+          )}
+
+          {isLive&&(
+            <div style={{background:"rgba(255,255,255,0.65)",border:`2px solid ${C.live}`,borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",letterSpacing:3,color:C.live,marginBottom:12}}>⚡ PLACAR AO VIVO</div>
+              <div style={{background:C.liveL,borderRadius:10,padding:"14px",textAlign:"center",marginBottom:14}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.5rem",color:C.live,letterSpacing:3,lineHeight:1}}>{m.score.my}–{m.score.adv}</div>
+                <div style={{fontSize:"0.7rem",color:C.live,fontWeight:600,marginTop:4}}>{liveMinute}'</div>
+              </div>
+              <div style={{fontSize:"0.76rem",color:C.textMid,marginBottom:14}}>
+                {[
+                  ["Meus gols:",myGoals,C.green],
+                  ["Assistências:",m.events.filter(e=>e.type==="assist").length,C.accentO],
+                  ["Amendoins est.:",`~${calcPnuts(m.events,m.isNational,m.isFinal,m.score.my>m.score.adv)}🥜`,C.gold],
+                ].map(([l,v,c])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span>{l}</span><strong style={{color:c}}>{v}</strong>
+                  </div>
+                ))}
+              </div>
+              {confirmFinish?(
+                <div>
+                  <div style={{fontSize:"0.8rem",color:C.accent,fontWeight:600,marginBottom:8,textAlign:"center"}}>Confirmar encerramento?</div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button onClick={()=>finishMatch(m.id)} style={{flex:1,background:C.accent,border:"none",color:"#fff",borderRadius:8,padding:"10px",fontWeight:700,fontSize:"0.88rem"}}>✔ Encerrar</button>
+                    <button onClick={()=>setConfirmFinish(false)} style={{flex:1,background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",color:C.textMid,borderRadius:8,padding:"10px",fontWeight:600,fontSize:"0.88rem"}}>Cancelar</button>
+                  </div>
+                </div>
+              ):(
+                <button onClick={()=>setConfirmFinish(true)} style={{width:"100%",background:"linear-gradient(135deg,#b91c1c,#ef4444)",border:"none",color:"#fff",borderRadius:10,padding:"12px",fontWeight:700,fontSize:"0.95rem"}}>
+                  🔴 ENCERRAR PARTIDA
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Sinergia info */}
+          {isPre&&(
+            <div style={{background:C.goldL,border:"1px solid #fde68a",borderRadius:12,padding:14}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.9rem",letterSpacing:2,color:C.gold,marginBottom:8}}>⭐ BÔNUS SINERGIA</div>
+              <div style={{fontSize:"0.74rem",color:C.textMid,lineHeight:1.7}}>
+                Aposte em <strong>Meu Jogador</strong> e cumpra dentro do jogo para ganhar amendoins extras!
+                {[["Marcar gol","+1🥜"],["Hat-trick","+2🥜"],["Assistência","+1🥜"],["Gol de falta","+1🥜"],["Vitória apostada","+1🥜"]].map(([l,b])=>(
+                  <div key={l} style={{display:"flex",justifyContent:"space-between"}}>
+                    <span>{l}</span><strong style={{color:C.gold}}>{b}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MINUTE SLIDER ────────────────────────────────────────────────────────────
+function MinuteSlider({minute, onChange}){
+  const trackRef = useRef(null);
+  const dragging = useRef(false);
+
+  const getMinuteFromEvent = useCallback((e)=>{
+    const track = trackRef.current;
+    if(!track) return minute;
+    const rect = track.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const ratio = Math.max(0, Math.min(1, (clientX-rect.left)/rect.width));
+    return Math.round(ratio*120);
+  },[minute]);
+
+  const onMouseDown=(e)=>{ dragging.current=true; onChange(getMinuteFromEvent(e)); };
+  const onMouseMove=(e)=>{ if(dragging.current) onChange(getMinuteFromEvent(e)); };
+  const onMouseUp=()=>{ dragging.current=false; };
+
+  useEffect(()=>{
+    window.addEventListener("mousemove",onMouseMove);
+    window.addEventListener("mouseup",onMouseUp);
+    window.addEventListener("touchmove",onMouseMove,{passive:true});
+    window.addEventListener("touchend",onMouseUp);
+    return()=>{
+      window.removeEventListener("mousemove",onMouseMove);
+      window.removeEventListener("mouseup",onMouseUp);
+      window.removeEventListener("touchmove",onMouseMove);
+      window.removeEventListener("touchend",onMouseUp);
+    };
+  },[onMouseMove]);
+
+  const pct = (minute/120)*100;
+  const isHT = minute>=45&&minute<90;
+  const sectionColor = minute<45?C.green:minute<90?"#f59e0b":C.accent;
+
+  return(
+    <div style={{background:"rgba(14,165,233,0.08)",borderRadius:12,padding:"14px 16px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:sectionColor,letterSpacing:2,lineHeight:1}}>{minute}'</div>
+        <div style={{fontSize:"0.72rem",color:C.textSoft,fontWeight:600,textAlign:"right"}}>
+          {minute<45?"1º TEMPO":minute<90?"2º TEMPO":"PRORROGAÇÃO"}
+        </div>
+        <div style={{display:"flex",gap:5}}>
+          <button onClick={()=>onChange(Math.max(0,minute-1))} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",color:C.blue,borderRadius:6,padding:"4px 10px",fontSize:"0.78rem",fontWeight:700}}>−1'</button>
+          <button onClick={()=>onChange(Math.min(120,minute+1))} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",color:C.blue,borderRadius:6,padding:"4px 10px",fontSize:"0.78rem",fontWeight:700}}>+1'</button>
+        </div>
+      </div>
+
+      {/* Track */}
+      <div ref={trackRef} onMouseDown={onMouseDown} onTouchStart={(e)=>{dragging.current=true;onChange(getMinuteFromEvent(e));}}
+        style={{position:"relative",height:28,cursor:"pointer",userSelect:"none",touchAction:"none"}}>
+        {/* Background sections */}
+        <div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",width:"100%",height:8,borderRadius:4,overflow:"hidden",display:"flex"}}>
+          <div style={{width:"37.5%",background:"#bbf7d0"}}/>  {/* 0-45 */}
+          <div style={{width:"2%",background:"#e5e7eb"}}/>
+          <div style={{width:"37.5%",background:"#fde68a"}}/>  {/* 46-90 */}
+          <div style={{width:"2%",background:"#e5e7eb"}}/>
+          <div style={{width:"21%",background:"#fecaca"}}/>    {/* 91-120 */}
+        </div>
+        {/* Progress */}
+        <div style={{position:"absolute",top:"50%",transform:"translateY(-50%)",left:0,width:`${pct}%`,height:8,background:sectionColor,borderRadius:4,transition:"width 0.05s",zIndex:1}}/>
+        {/* Markers 45' 90' */}
+        {[45,90].map(mn=>(
+          <div key={mn} style={{position:"absolute",top:"50%",transform:"translate(-50%,-50%)",left:`${(mn/120)*100}%`,width:2,height:16,background:"#d1d5db",zIndex:2}}/>
+        ))}
+        {/* Handle */}
+        <div style={{position:"absolute",top:"50%",transform:"translate(-50%,-50%)",left:`${pct}%`,width:22,height:22,borderRadius:"50%",background:"rgba(255,255,255,0.65)",border:`3px solid ${sectionColor}`,boxShadow:"0 2px 8px rgba(0,0,0,0.15)",zIndex:3,transition:"left 0.05s",cursor:"grab"}}/>
+      </div>
+
+      {/* Labels */}
+      <div style={{display:"flex",justifyContent:"space-between",marginTop:6,fontSize:"0.65rem",color:C.textSoft}}>
+        <span>0'</span><span style={{color:"#16a34a",fontWeight:600}}>45'</span><span style={{color:"#d97706",fontWeight:600}}>90'</span><span>120'</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── ESTRELATO ────────────────────────────────────────────────────────────────
+function EstrelatoTab({pesHistory,pnuts,pesTab,setPesTab,stats}){
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:12,marginBottom:22}}>
+        {[
+          {icon:"🥜",val:pnuts,label:"Amendoins",col:C.gold,bg:"rgba(245,158,11,0.12)"},
+          {icon:"🕹️",val:stats.totalMatches,label:"Partidas",col:C.blue,bg:C.blueLight},
+          {icon:"⚽",val:stats.totalGoals,label:"Gols",col:C.green,bg:C.greenL},
+          {icon:"🅰️",val:stats.totalAssists,label:"Assistências",col:C.accentO,bg:"#fff7ed"},
+        ].map(s=>(
+          <div key={s.label} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:38,height:38,background:s.bg,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem",flexShrink:0}}>{s.icon}</div>
+            <div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.7rem",color:s.col,lineHeight:1,letterSpacing:1}}>{s.val}</div>
+              <div style={{fontSize:"0.65rem",color:C.textSoft,fontWeight:700,letterSpacing:1}}>{s.label.toUpperCase()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {[{id:"historico",icon:"📋",l:"Histórico"},{id:"forma",icon:"📈",l:"Forma"},{id:"objetivos",icon:"🎯",l:"Objetivos"},{id:"calendario",icon:"📅",l:"Calendário"},{id:"regras",icon:"📜",l:"Regras"}].map(t=>(
+          <button key={t.id} onClick={()=>setPesTab(t.id)} style={{background:pesTab===t.id?C.blue:"#fff",color:pesTab===t.id?"#fff":C.textMid,border:`1px solid ${pesTab===t.id?C.blue:C.border}`,borderRadius:8,padding:"7px 16px",fontWeight:600,fontSize:"0.84rem"}}>
+            {t.icon} {t.l}
+          </button>
+        ))}
+      </div>
+      {pesTab==="regras"&&<RulesTable/>}
+      {pesTab==="historico"&&(
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {pesHistory.length===0?<Empty>Nenhuma partida encerrada. Vá em Apostas e comece uma!</Empty>:
+            pesHistory.map(p=><MatchHistoryCard key={p.id} p={p}/>)}
+        </div>
+      )}
+      {pesTab==="forma"&&<FormaChart pesHistory={pesHistory}/>}
+      {pesTab==="objetivos"&&<ObjetivosPanel pesHistory={pesHistory} stats={stats} pnuts={0}/>}
+      {pesTab==="calendario"&&<CalendarioView pesHistory={pesHistory}/>}
+    </div>
+  );
+}
+
+// ─── FORMA CHART ──────────────────────────────────────────────────────────────
+function FormaChart({pesHistory}){
+  const last20 = [...pesHistory].reverse().slice(0,20);
+  if(last20.length===0) return <Empty>Nenhuma partida encerrada ainda.</Empty>;
+
+  const maxGoals = Math.max(...last20.map(p=>(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0)),1);
+
+  // Gols per match running average (window 5)
+  const goalsArr = last20.map(p=>(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0));
+  const avg5 = goalsArr.map((_,i)=>{
+    const window = goalsArr.slice(Math.max(0,i-4),i+1);
+    return +(window.reduce((a,b)=>a+b,0)/window.length).toFixed(2);
+  });
+
+  const chartH = 160;
+  const chartW = Math.max(last20.length*38, 400);
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:18}}>
+      {/* Forma recente bolhas */}
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:14}}>📈 FORMA RECENTE (últimas {last20.length} partidas)</div>
+        <div style={{overflowX:"auto"}}>
+          <div style={{display:"flex",gap:6,minWidth:"max-content",paddingBottom:8}}>
+            {last20.map((p,i)=>{
+              const g=(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0);
+              const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+              return(
+                <div key={p.id} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:44}}>
+                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.8rem",color:C.textSoft,letterSpacing:1}}>{i+1}</div>
+                  <div style={{width:36,height:36,borderRadius:"50%",background:rc,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:"0.85rem",boxShadow:`0 2px 8px ${rc}55`}}>
+                    {p.isWin?"V":p.isDraw?"E":"D"}
+                  </div>
+                  <div style={{fontSize:"0.72rem",fontWeight:700,color:rc}}>{p.score.my}–{p.score.adv}</div>
+                  {g>0&&<div style={{fontSize:"0.65rem",color:C.green,fontWeight:600}}>⚽{g}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Gráfico de barras de gols */}
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:6}}>⚽ GOLS POR PARTIDA</div>
+        <div style={{fontSize:"0.72rem",color:C.textSoft,marginBottom:14}}>Linha pontilhada = média móvel (5 jogos)</div>
+        <div style={{overflowX:"auto"}}>
+          <svg width={chartW} height={chartH+40} style={{display:"block"}}>
+            {/* Grid lines */}
+            {[0,1,2,3,4,5].filter(v=>v<=maxGoals+1).map(v=>{
+              const y=chartH - (v/Math.max(maxGoals,1))*chartH;
+              return <g key={v}>
+                <line x1={0} y1={y} x2={chartW} y2={y} stroke="#e2e8f0" strokeWidth={1}/>
+                <text x={0} y={y-3} fontSize={9} fill={C.textSoft}>{v}</text>
+              </g>;
+            })}
+            {/* Bars */}
+            {last20.map((p,i)=>{
+              const g=(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0);
+              const barH=(g/Math.max(maxGoals,1))*chartH;
+              const x=i*38+16;
+              const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+              return <g key={p.id}>
+                <rect x={x} y={chartH-barH} width={22} height={barH} rx={4} fill={rc} opacity={0.8}/>
+                {g>0&&<text x={x+11} y={chartH-barH-4} textAnchor="middle" fontSize={10} fill={rc} fontWeight="700">{g}</text>}
+                <text x={x+11} y={chartH+14} textAnchor="middle" fontSize={9} fill={C.textSoft}>{i+1}</text>
+              </g>;
+            })}
+            {/* Avg line */}
+            {avg5.length>1&&(
+              <polyline
+                points={avg5.map((v,i)=>`${i*38+27},${chartH-(v/Math.max(maxGoals,1))*chartH}`).join(" ")}
+                fill="none" stroke={C.blue} strokeWidth={2} strokeDasharray="4 3" opacity={0.7}
+              />
+            )}
+          </svg>
+        </div>
+      </div>
+
+      {/* Resumo forma */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+        {(()=>{
+          const wins=last20.filter(p=>p.isWin).length;
+          const draws=last20.filter(p=>p.isDraw).length;
+          const losses=last20.filter(p=>!p.isWin&&!p.isDraw).length;
+          const totalG=goalsArr.reduce((a,b)=>a+b,0);
+          return [
+            {icon:"🟢",label:"Vitórias",val:wins,col:C.green,bg:C.greenL},
+            {icon:"🟡",label:"Empates",val:draws,col:C.gold,bg:C.goldL},
+            {icon:"🔴",label:"Derrotas",val:losses,col:C.accent,bg:C.liveL},
+            {icon:"⚽",label:"Gols totais",val:totalG,col:C.blue,bg:C.blueLight},
+            {icon:"📊",label:"Média/jogo",val:last20.length>0?(totalG/last20.length).toFixed(1):0,col:C.purple,bg:C.purpleL},
+            {icon:"🔥",label:"Melhor seq.",val:`${last20.reduce((a,p)=>{const s=p.isWin?a.cur+1:0;return{cur:s,max:Math.max(a.max,s)};},{cur:0,max:0}).max}V`,col:C.green,bg:C.greenL},
+          ];
+        })().map(s=>(
+          <div key={s.label} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:32,height:32,background:s.bg,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1rem",flexShrink:0}}>{s.icon}</div>
+            <div>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.4rem",color:s.col,lineHeight:1,letterSpacing:1}}>{s.val}</div>
+              <div style={{fontSize:"0.62rem",color:C.textSoft,fontWeight:700}}>{s.label.toUpperCase()}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── OBJETIVOS ────────────────────────────────────────────────────────────────
+const OBJECTIVES = [
+  // Semanais (resetam a cada 7 dias na lógica de contagem)
+  {id:"obj_3goals",   period:"semanal", icon:"⚽", name:"Artilheiro da Semana",  desc:"Marque 3 gols",          reward:5,  check:(h)=>h.reduce((a,p)=>a+(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0),0)>=3},
+  {id:"obj_2wins",    period:"semanal", icon:"🏆", name:"Sequência Vencedora",   desc:"Vença 2 partidas",        reward:4,  check:(h)=>h.filter(p=>p.isWin).length>=2},
+  {id:"obj_1fk",      period:"semanal", icon:"🎯", name:"Especialista",          desc:"Marque 1 gol de falta",   reward:3,  check:(h)=>h.some(p=>(p.summary?.fkGoals||0)>0)},
+  {id:"obj_1assist",  period:"semanal", icon:"🅰️", name:"Garçom",               desc:"Dê 1 assistência",         reward:2,  check:(h)=>h.some(p=>(p.summary?.assists||0)>0)},
+  // Mensais
+  {id:"obj_10goals",  period:"mensal",  icon:"🔥", name:"Mês dos Gols",          desc:"Marque 10 gols no mês",   reward:15, check:(h)=>h.reduce((a,p)=>a+(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0),0)>=10},
+  {id:"obj_5wins",    period:"mensal",  icon:"👑", name:"Dominância",            desc:"Vença 5 partidas no mês", reward:12, check:(h)=>h.filter(p=>p.isWin).length>=5},
+  {id:"obj_hat",      period:"mensal",  icon:"🎩", name:"Lenda do Mês",          desc:"Faça um hat-trick",        reward:10, check:(h)=>h.some(p=>((p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0))>=3)},
+  {id:"obj_nolose",   period:"mensal",  icon:"🛡️", name:"Invicto",              desc:"5 partidas sem perder",    reward:8,  check:(h)=>{let c=0;for(const p of h){if(!p.isWin&&!p.isDraw){c=0;}else{c++;if(c>=5)return true;}}return false;}},
+];
+
+function ObjetivosPanel({pesHistory,stats}){
+  // Calcular janelas
+  const now = new Date();
+  const weekStart = new Date(now); weekStart.setDate(now.getDate()-7);
+  const monthStart = new Date(now); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+
+  const weekHistory = pesHistory.filter(p=>{
+    if(!p.date) return false;
+    // p.date = "dd/mm/yyyy, hh:mm:ss" from toLocaleString pt-BR
+    const parts = p.date.split(", ")[0].split("/");
+    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    return d >= weekStart;
+  });
+  const monthHistory = pesHistory.filter(p=>{
+    if(!p.date) return false;
+    const parts = p.date.split(", ")[0].split("/");
+    const d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    return d >= monthStart;
+  });
+
+  const weekObjs = OBJECTIVES.filter(o=>o.period==="semanal");
+  const monthObjs = OBJECTIVES.filter(o=>o.period==="mensal");
+
+  const ObjCard=({obj,history})=>{
+    const done = obj.check(history);
+    return(
+      <div style={{background:"rgba(255,255,255,0.65)",border:`2px solid ${done?"#86efac":C.border}`,borderRadius:12,padding:"12px 16px",display:"flex",alignItems:"center",gap:12,opacity:1}}>
+        <div style={{width:40,height:40,background:done?C.greenL:C.blueLight,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"1.2rem",flexShrink:0}}>{obj.icon}</div>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:"0.88rem",color:done?C.green:C.text}}>{obj.name}</div>
+          <div style={{fontSize:"0.74rem",color:C.textSoft,marginTop:1}}>{obj.desc}</div>
+        </div>
+        <div style={{textAlign:"right",flexShrink:0}}>
+          {done?(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              <span style={{fontSize:"1.3rem"}}>✅</span>
+              <span style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.85rem",color:C.green,letterSpacing:1}}>+{obj.reward}🥜</span>
+            </div>
+          ):(
+            <div style={{background:C.goldL,borderRadius:8,padding:"4px 10px",fontFamily:"'Orbitron',sans-serif",fontSize:"0.9rem",color:C.gold,letterSpacing:1}}>+{obj.reward}🥜</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:22}}>
+      <div style={{background:"rgba(14,165,233,0.08)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:12,padding:"12px 16px",fontSize:"0.8rem",color:C.textMid}}>
+        ℹ️ Os objetivos são <strong>automáticos</strong> — eles verificam seu histórico recente. Os semanais olham os últimos 7 dias, os mensais olham o mês atual.
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:4}}>🗓️ SEMANAIS</div>
+        <div style={{fontSize:"0.72rem",color:C.textSoft,marginBottom:14}}>{weekHistory.length} partidas nos últimos 7 dias</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {weekObjs.map(o=><ObjCard key={o.id} obj={o} history={weekHistory}/>)}
+        </div>
+      </div>
+
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.green,marginBottom:4}}>📆 MENSAIS</div>
+        <div style={{fontSize:"0.72rem",color:C.textSoft,marginBottom:14}}>{monthHistory.length} partidas neste mês</div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {monthObjs.map(o=><ObjCard key={o.id} obj={o} history={monthHistory}/>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── CALENDÁRIO ───────────────────────────────────────────────────────────────
+function CalendarioView({pesHistory}){
+  const [viewDate,setViewDate] = useState(new Date());
+  const year=viewDate.getFullYear(), month=viewDate.getMonth();
+  const monthName=viewDate.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+  const firstDay=new Date(year,month,1).getDay();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+
+  // Map day -> matches
+  const dayMap={};
+  for(const p of pesHistory){
+    if(!p.matchDate) continue;
+    const [y,m,d]=p.matchDate.split("-").map(Number);
+    if(y===year&&m-1===month){
+      if(!dayMap[d]) dayMap[d]=[];
+      dayMap[d].push(p);
+    }
+  }
+
+  const prevMonth=()=>setViewDate(d=>new Date(d.getFullYear(),d.getMonth()-1,1));
+  const nextMonth=()=>setViewDate(d=>new Date(d.getFullYear(),d.getMonth()+1,1));
+  const today=new Date();
+
+  const cells=[];
+  for(let i=0;i<firstDay;i++) cells.push(null);
+  for(let d=1;d<=daysInMonth;d++) cells.push(d);
+
+  const weeks=[];
+  for(let i=0;i<cells.length;i+=7) weeks.push(cells.slice(i,i+7));
+
+  return(
+    <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)"}}>
+      {/* Header */}
+      <div style={{background:`linear-gradient(135deg,${C.blueMid},${C.blue})`,padding:"14px 18px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <button onClick={prevMonth} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:8,padding:"6px 14px",fontWeight:700}}>‹</button>
+        <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",letterSpacing:3,color:"#fff",textTransform:"uppercase"}}>{monthName}</div>
+        <button onClick={nextMonth} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:8,padding:"6px 14px",fontWeight:700}}>›</button>
+      </div>
+      {/* Weekday headers */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",background:"rgba(14,165,233,0.08)",borderBottom:`1px solid ${C.border}`}}>
+        {["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"].map(d=>(
+          <div key={d} style={{textAlign:"center",padding:"8px 4px",fontSize:"0.7rem",fontWeight:700,color:C.textMid,letterSpacing:1}}>{d}</div>
+        ))}
+      </div>
+      {/* Weeks */}
+      {weeks.map((week,wi)=>(
+        <div key={wi} style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",borderBottom:wi<weeks.length-1?`1px solid ${C.border}`:"none"}}>
+          {Array.from({length:7},(_,di)=>{
+            const day=week[di]??null;
+            const matches=day?dayMap[day]||[]:[];
+            const isToday=day&&today.getDate()===day&&today.getMonth()===month&&today.getFullYear()===year;
+            return(
+              <div key={di} style={{minHeight:72,padding:"6px",background:isToday?C.blueLight:"#fff",borderRight:di<6?`1px solid ${C.border}`:"none"}}>
+                {day&&(
+                  <>
+                    <div style={{fontWeight:isToday?700:400,fontSize:"0.78rem",color:isToday?C.blue:day?C.text:C.textSoft,marginBottom:3,width:22,height:22,borderRadius:"50%",background:isToday?C.blue:"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:isToday?"#fff":C.text}}>{day}</div>
+                    <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                      {matches.slice(0,2).map(p=>{
+                        const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+                        return(
+                          <div key={p.id} style={{background:rc,borderRadius:4,padding:"2px 5px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}>
+                            <span style={{fontSize:"0.58rem",color:"#fff",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:44}}>{p.opponent}</span>
+                            <span style={{fontSize:"0.65rem",color:"#fff",fontWeight:700,flexShrink:0}}>{p.score.my}–{p.score.adv}</span>
+                          </div>
+                        );
+                      })}
+                      {matches.length>2&&<div style={{fontSize:"0.58rem",color:C.textSoft,fontWeight:600}}>+{matches.length-2}</div>}
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {/* Legend */}
+      <div style={{padding:"10px 16px",background:"rgba(14,165,233,0.08)",borderTop:`1px solid ${C.border}`,display:"flex",gap:16,flexWrap:"wrap"}}>
+        {[{col:C.green,l:"Vitória"},{col:C.gold,l:"Empate"},{col:C.accent,l:"Derrota"}].map(({col,l})=>(
+          <div key={l} style={{display:"flex",alignItems:"center",gap:5,fontSize:"0.72rem",color:C.textMid}}>
+            <div style={{width:10,height:10,borderRadius:2,background:col}}/>
+            {l}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── DUELOS ───────────────────────────────────────────────────────────────────
+function DuelosTab({pesHistory}){
+  const [selected,setSelected]=useState(null);
+
+  // Agrupar por adversário
+  const dueloMap={};
+  for(const p of pesHistory){
+    const opp=p.opponent;
+    if(!dueloMap[opp]) dueloMap[opp]={opponent:opp,matches:[],wins:0,draws:0,losses:0,goalsFor:0,goalsAgainst:0};
+    dueloMap[opp].matches.unshift(p); // mais recente primeiro
+    if(p.isWin) dueloMap[opp].wins++;
+    else if(p.isDraw) dueloMap[opp].draws++;
+    else dueloMap[opp].losses++;
+    dueloMap[opp].goalsFor+=p.score.my;
+    dueloMap[opp].goalsAgainst+=p.score.adv;
+  }
+
+  const duelos=Object.values(dueloMap).sort((a,b)=>b.matches.length-a.matches.length);
+  const sel=selected?dueloMap[selected]:null;
+
+  if(pesHistory.length===0) return <Empty>Nenhuma partida encerrada ainda. Registre jogos para ver o histórico de duelos!</Empty>;
+
+  return(
+    <div style={{display:"grid",gridTemplateColumns:"280px 1fr",gap:18,alignItems:"start"}}>
+      {/* Lista de adversários */}
+      <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)"}}>
+        <div style={{background:"linear-gradient(135deg,rgba(2,132,199,0.9),rgba(14,165,233,0.8))",backdropFilter:"blur(16px)",padding:"12px 16px",fontFamily:"'Orbitron',sans-serif",fontSize:"0.95rem",letterSpacing:3,color:"#fff",fontWeight:700,textShadow:"0 1px 4px rgba(0,0,0,0.2)",borderBottom:"1px solid rgba(255,255,255,0.2)"}}>⚔️ ADVERSÁRIOS</div>
+        <div style={{maxHeight:600,overflowY:"auto"}}>
+          {duelos.map(d=>{
+            const wr=d.matches.length>0?Math.round(d.wins/d.matches.length*100):0;
+            const isActive=selected===d.opponent;
+            return(
+              <div key={d.opponent} onClick={()=>setSelected(d.opponent)} style={{padding:"12px 16px",cursor:"pointer",background:isActive?C.blueLight:"#fff",borderBottom:`1px solid ${C.border}`,borderLeft:`3px solid ${isActive?C.blue:"transparent"}`,transition:"all 0.15s"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div style={{fontWeight:700,fontSize:"0.88rem",color:isActive?C.blue:C.text}}>{d.opponent}</div>
+                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.9rem",color:C.textSoft,letterSpacing:1}}>{d.matches.length}x</div>
+                </div>
+                {/* mini barra V/E/D */}
+                <div style={{display:"flex",height:5,borderRadius:4,overflow:"hidden",gap:1,marginBottom:4}}>
+                  {d.wins>0&&<div style={{flex:d.wins,background:C.green}}/>}
+                  {d.draws>0&&<div style={{flex:d.draws,background:C.gold}}/>}
+                  {d.losses>0&&<div style={{flex:d.losses,background:C.accent}}/>}
+                </div>
+                <div style={{display:"flex",gap:8,fontSize:"0.68rem"}}>
+                  <span style={{color:C.green,fontWeight:700}}>{d.wins}V</span>
+                  <span style={{color:C.gold,fontWeight:700}}>{d.draws}E</span>
+                  <span style={{color:C.accent,fontWeight:700}}>{d.losses}D</span>
+                  <span style={{color:C.textSoft,marginLeft:"auto"}}>{wr}% V</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Detalhe do duelo */}
+      {sel?(
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {/* Header duelo */}
+          <div style={{background:"linear-gradient(135deg,#1e429f,#1a56db)",borderRadius:16,padding:"20px 24px",color:"#fff"}}>
+            <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.6rem",letterSpacing:3,marginBottom:4}}>CONFRONTO DIRETO</div>
+            <div style={{fontSize:"0.8rem",opacity:0.7,marginBottom:16}}>Desde o início do registro · {sel.matches.length} jogos</div>
+            {/* Placar geral */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:12,alignItems:"center",marginBottom:16}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.8rem",color:"#fff",letterSpacing:2,lineHeight:1}}>{sel.wins}</div>
+                <div style={{fontSize:"0.7rem",opacity:0.7,letterSpacing:1}}>VITÓRIAS</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.4rem",color:"rgba(255,255,255,0.6)",letterSpacing:2}}>{sel.draws}</div>
+                <div style={{fontSize:"0.65rem",opacity:0.6,letterSpacing:1}}>EMPATES</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2.8rem",color:"rgba(255,255,255,0.5)",letterSpacing:2,lineHeight:1}}>{sel.losses}</div>
+                <div style={{fontSize:"0.7rem",opacity:0.6,letterSpacing:1}}>DERROTAS</div>
+              </div>
+            </div>
+            {/* Barra confronto estilo SofaScore */}
+            <div style={{display:"flex",height:10,borderRadius:6,overflow:"hidden",gap:2}}>
+              {sel.wins>0&&<div style={{flex:sel.wins,background:"#4ade80"}}/>}
+              {sel.draws>0&&<div style={{flex:sel.draws,background:"rgba(255,255,255,0.3)"}}/>}
+              {sel.losses>0&&<div style={{flex:sel.losses,background:"rgba(239,68,68,0.6)"}}/>}
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:"0.65rem",opacity:0.7}}>
+              <span>{sel.wins} vitória{sel.wins!==1?"s":""}</span>
+              <span>{sel.draws} empate{sel.draws!==1?"s":""}</span>
+              <span>{sel.losses} derrota{sel.losses!==1?"s":""}</span>
+            </div>
+          </div>
+
+          {/* Stats gerais */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+            {[
+              {icon:"⚽",label:"Gols marcados",val:sel.goalsFor,col:C.green,bg:C.greenL},
+              {icon:"🔴",label:"Gols sofridos",val:sel.goalsAgainst,col:C.accent,bg:C.liveL},
+              {icon:"📊",label:"Saldo de gols",val:`${sel.goalsFor-sel.goalsAgainst>0?"+":""}${sel.goalsFor-sel.goalsAgainst}`,col:sel.goalsFor>=sel.goalsAgainst?C.green:C.accent,bg:sel.goalsFor>=sel.goalsAgainst?C.greenL:C.liveL},
+            ].map(s=>(
+              <div key={s.label} style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
+                <div style={{fontSize:"1.2rem",marginBottom:4}}>{s.icon}</div>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.8rem",color:s.col,letterSpacing:1,lineHeight:1}}>{s.val}</div>
+                <div style={{fontSize:"0.65rem",color:C.textSoft,fontWeight:700,marginTop:2}}>{s.label.toUpperCase()}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Últimos confrontos */}
+          <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)"}}>
+            <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`,fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",letterSpacing:3,color:C.blue}}>
+              HISTÓRICO DE CONFRONTOS
+            </div>
+            {sel.matches.map((p,i)=>{
+              const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+              const label=p.isWin?"V":p.isDraw?"E":"D";
+              const g=(p.summary?.goals||0)+(p.summary?.fkGoals||0)+(p.summary?.cornerGoals||0);
+              return(
+                <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",borderBottom:i<sel.matches.length-1?`1px solid ${C.border}`:"none",background:i%2===0?"#fff":C.blueLight}}>
+                  {/* resultado bolha */}
+                  <div style={{width:28,height:28,borderRadius:"50%",background:rc,display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontWeight:700,fontSize:"0.78rem",flexShrink:0}}>{label}</div>
+                  {/* times */}
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"0.86rem",fontWeight:600}}>{p.myTeam} <span style={{color:C.textSoft,fontWeight:400}}>vs</span> {p.opponent}</div>
+                    <div style={{fontSize:"0.7rem",color:C.textSoft}}>{p.competition}{p.season?` · ${p.season}`:""}{p.matchDate?` · ${new Date(p.matchDate+"T12:00:00").toLocaleDateString("pt-BR")}`:""}</div>
+                  </div>
+                  {/* placar */}
+                  <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.2rem",color:rc,letterSpacing:1,flexShrink:0}}>{p.score.my}–{p.score.adv}</div>
+                  {/* gols */}
+                  {g>0&&<div style={{fontSize:"0.8rem",color:C.green,fontWeight:700,flexShrink:0}}>⚽{g}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ):(
+        <div style={{background:"rgba(255,255,255,0.65)",border:`2px dashed ${C.border}`,borderRadius:16,padding:"52px 20px",textAlign:"center"}}>
+          <div style={{fontSize:"3rem",marginBottom:10}}>⚔️</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",letterSpacing:2,color:C.blue,marginBottom:8}}>Selecione um Adversário</div>
+          <div style={{color:C.textSoft,fontSize:"0.86rem"}}>Clique em um time à esquerda para ver o histórico completo de confrontos</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PERFIL ───────────────────────────────────────────────────────────────────
+function PerfilTab({playerName,setPlayerName,playerNameEdit,setPlayerNameEdit,stats,achievements,season,setSeason,pnuts,balance}){
+  const [nameInput,setNameInput]=useState(playerName);
+  const unlockedIds=new Set(achievements);
+  const winRate=stats.totalMatches>0?Math.round(stats.wins/stats.totalMatches*100):0;
+
+  return(
+    <div>
+      {/* Card jogador */}
+      <div style={{background:"linear-gradient(135deg,rgba(2,132,199,0.88),rgba(14,165,233,0.75))",backdropFilter:"blur(20px)",borderRadius:20,padding:"28px 28px",marginBottom:22,display:"flex",gap:24,alignItems:"center",boxShadow:"0 12px 40px rgba(3,105,161,0.3),0 1px 0 rgba(255,255,255,0.3) inset",border:"1px solid rgba(255,255,255,0.3)"}}>
+        <div style={{width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,0.15)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"2.5rem",flexShrink:0,border:"3px solid rgba(255,255,255,0.3)"}}>👤</div>
+        <div style={{flex:1}}>
+          {playerNameEdit?(
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <input value={nameInput} onChange={e=>setNameInput(e.target.value)} style={{...inp_s,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",fontSize:"1.3rem",fontFamily:"'Orbitron',sans-serif",letterSpacing:2,width:220}}/>
+              <button onClick={()=>{setPlayerName(nameInput);setPlayerNameEdit(false);}} style={{background:"rgba(255,255,255,0.2)",border:"1px solid rgba(255,255,255,0.3)",color:"#fff",borderRadius:8,padding:"8px 16px",fontWeight:700}}>Salvar</button>
+            </div>
+          ):(
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"2rem",color:"#fff",letterSpacing:3,lineHeight:1}}>{playerName}</div>
+              <button onClick={()=>{setNameInput(playerName);setPlayerNameEdit(true);}} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.2)",color:"#fff",borderRadius:6,padding:"4px 10px",fontSize:"0.75rem"}}>✏️ Editar</button>
+            </div>
+          )}
+          <div style={{color:"rgba(255,255,255,0.7)",fontSize:"0.82rem",marginTop:4}}>Temporada {season} · {achievements.length} conquistas desbloqueadas</div>
+          <div style={{display:"flex",gap:16,marginTop:12}}>
+            {[["💰",`R$ ${balance.toFixed(0)}`,"Saldo"],["🥜",pnuts,"Amendoins"],["📈",`${winRate}%`,"Vitórias"]].map(([i,v,l])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontSize:"1rem"}}>{i}</div>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",color:"#fff",letterSpacing:1,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:"0.62rem",color:"rgba(255,255,255,0.6)",letterSpacing:1}}>{l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stats detalhadas */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18,marginBottom:22}}>
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:14}}>📊 ESTATÍSTICAS</div>
+          {[
+            ["⚽","Gols total",stats.totalGoals,C.green],
+            ["🦶","Gol pé esquerdo",stats.goalLeft||0,"#059669"],
+            ["👟","Gol pé direito",stats.goalRight||0,"#0891b2"],
+            ["🗣️","Gol de cabeça",stats.goalHead||0,"#7c3aed"],
+            ["🌟","Gol fora da área",stats.goalOutside||0,"#db2777"],
+            ["🎩","Gol cobertura",stats.goalLob||0,"#b45309"],
+            ["🔔","Gol no travessão",stats.goalPost||0,"#dc2626"],
+            ["🎯","Gols de falta",stats.fkGoals,"#0284c7"],
+            ["🚩","Gols escanteio",stats.cornerGoals,C.purple],
+            ["🅰️","Assistências",stats.totalAssists,C.accentO],
+            ["🔥","Hat-tricks",stats.hatTricks,C.accent],
+            ["🏆","Gols em finais",stats.finalGoals,C.gold],
+            ["⭐","Bônus sinergia",stats.totalSynergy,C.gold],
+            ["📈","Taxa de vitória",`${winRate}%`,C.green],
+          ].map(([i,l,v,c])=>(
+            <div key={l} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 0",borderBottom:`1px solid ${C.border}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,fontSize:"0.85rem"}}>
+                <span>{i}</span><span style={{color:C.textMid}}>{l}</span>
+              </div>
+              <strong style={{color:c,fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:1}}>{v}</strong>
+            </div>
+          ))}
+        </div>
+
+        {/* Conquistas */}
+        <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,padding:18,backdropFilter:"blur(12px)",boxShadow:"0 4px 20px rgba(14,165,233,0.07),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.5)"}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blue,marginBottom:14}}>🏆 CONQUISTAS</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8,maxHeight:400,overflowY:"auto"}}>
+            {ACHIEVEMENTS.map(a=>{
+              const unlocked=unlockedIds.has(a.id);
+              return(
+                <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:unlocked?C.goldL:C.blueLight,borderRadius:10,border:`1px solid ${unlocked?"#fde68a":C.border}`,opacity:unlocked?1:0.5}}>
+                  <span style={{fontSize:"1.4rem"}}>{a.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:"0.84rem",color:unlocked?C.gold:C.textMid}}>{a.name}</div>
+                    <div style={{fontSize:"0.72rem",color:C.textSoft}}>{a.desc}</div>
+                  </div>
+                  {unlocked&&<span style={{fontSize:"1rem"}}>✅</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── MATCH HISTORY CARD ───────────────────────────────────────────────────────
+function MatchHistoryCard({p}){
+  const [open,setOpen]=useState(false);
+  const s=p.summary;
+  const rc=p.isWin?C.green:p.isDraw?C.gold:C.accent;
+  return(
+    <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:12,overflow:"hidden"}}>
+      <div onClick={()=>setOpen(x=>!x)} style={{padding:"13px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:8,height:8,borderRadius:"50%",background:rc,flexShrink:0}}/>
+        <div style={{flex:1}}>
+          <div style={{fontWeight:700,fontSize:"0.9rem"}}>{p.myTeam} <span style={{color:C.textSoft,fontWeight:400}}>vs</span> {p.opponent}</div>
+          <div style={{fontSize:"0.72rem",color:C.textSoft,marginTop:1}}>{p.competition}{p.season?` · ${p.season}`:""}{p.matchDate?` · ${new Date(p.matchDate+"T12:00:00").toLocaleDateString("pt-BR")}`:""}</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+          <div style={{background:p.isWin?C.greenL:p.isDraw?C.goldL:C.liveL,color:rc,borderRadius:8,padding:"3px 10px",fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:1}}>{p.score.my}–{p.score.adv}</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",color:C.gold,letterSpacing:1}}>+{p.earned}🥜</div>
+          <span style={{color:C.textSoft,fontSize:"0.75rem",transform:open?"rotate(180deg)":"none",transition:"transform 0.2s",display:"inline-block"}}>▼</span>
+        </div>
+      </div>
+      {open&&(
+        <div style={{padding:"12px 16px",borderTop:`1px solid ${C.border}`,background:"rgba(14,165,233,0.08)",animation:"fi 0.2s ease"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(100px,1fr))",gap:7,marginBottom:10}}>
+            {[
+              s.goals>0&&{icon:"⚽",label:"Gol",val:s.goals,col:C.green},
+              s.goalRight>0&&{icon:"👟",label:"Pé Dir.",val:s.goalRight,col:"#0891b2"},
+              s.goalLeft>0&&{icon:"🦶",label:"Pé Esq.",val:s.goalLeft,col:"#059669"},
+              s.goalHead>0&&{icon:"🗣️",label:"Cabeça",val:s.goalHead,col:"#7c3aed"},
+              s.goalOutside>0&&{icon:"🌟",label:"Fora Área",val:s.goalOutside,col:"#db2777"},
+              s.goalLob>0&&{icon:"🎩",label:"Cobertura",val:s.goalLob,col:"#b45309"},
+              s.goalPost>0&&{icon:"🔔",label:"Travessão",val:s.goalPost,col:"#dc2626"},
+              s.fkGoals>0&&{icon:"🎯",label:"Falta",val:s.fkGoals,col:"#0284c7"},
+              s.cornerGoals>0&&{icon:"🚩",label:"Escanteio",val:s.cornerGoals,col:C.purple},
+              s.assists>0&&{icon:"🅰️",label:"Assists.",val:s.assists,col:C.accentO},
+              s.advGoals>0&&{icon:"🔴",label:"Gols Adv.",val:s.advGoals,col:C.accent},
+              s.yellows>0&&{icon:"🟨",label:"Amarelo",val:s.yellows,col:C.gold},
+              s.reds>0&&{icon:"🟥",label:"Vermelho",val:s.reds,col:C.accent},
+            ].filter(Boolean).map(x=>(
+              <div key={x.label} style={{background:"rgba(255,255,255,0.65)",borderRadius:8,padding:"7px 8px",textAlign:"center",border:"1px solid rgba(255,255,255,0.5)"}}>
+                <div style={{fontSize:"0.9rem"}}>{x.icon}</div>
+                <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.3rem",color:x.col,letterSpacing:1,lineHeight:1}}>{x.val}</div>
+                <div style={{fontSize:"0.6rem",color:C.textSoft,fontWeight:600}}>{x.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+            {s.hatTrick&&<Chip color={C.purple} bg={C.purpleL}>🔥 Hat-trick!</Chip>}
+            {s.doublePack&&!s.hatTrick&&<Chip color={C.accentO} bg="#fff7ed">💥 Dobradinha!</Chip>}
+            {s.hatTrickAssist&&<Chip color={C.accentO} bg="#fff7ed">🎩 Hat-trick Assist.!</Chip>}
+            {p.isNational&&<Chip color="#0284c7" bg="#e0f2fe">🌍 Seleção</Chip>}
+            {p.isFinal&&<Chip color="#b45309" bg="#fef3c7">🏆 Final</Chip>}
+            {p.isWin&&<Chip color={C.green} bg={C.greenL}>🥇 Vitória</Chip>}
+            {p.synergyBonus>0&&<Chip color={C.gold} bg={C.goldL}>⭐ +{p.synergyBonus} Sinergia</Chip>}
+            {p.cardDebt>0&&p.debtCleared&&<Chip color={C.green} bg={C.greenL}>✅ Dívida quitada</Chip>}
+            {p.cardDebt>0&&!p.debtCleared&&<Chip color={C.accent} bg={C.liveL}>⚠️ -{p.cardDebt}🥜 cartão</Chip>}
+          </div>
+          {p.events.length>0&&(
+            <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
+              {p.events.map(ev=>{
+                const et=EVENT_TYPES.find(x=>x.type===ev.type)||{icon:"•",label:ev.type,color:C.textSoft};
+                return <span key={ev.id} style={{background:"rgba(255,255,255,0.65)",border:`1px solid ${et.color}40`,borderRadius:6,padding:"3px 7px",fontSize:"0.7rem",color:et.color,fontWeight:600}}>{ev.minute}' {et.icon} {et.label}</span>;
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RulesTable(){
+  return(
+    <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:16,overflow:"hidden",backdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(14,165,233,0.08),0 1px 0 rgba(255,255,255,0.7) inset",border:"1px solid rgba(255,255,255,0.55)"}}>
+      <div style={{background:`linear-gradient(135deg,${C.blueMid},${C.blue})`,display:"grid",gridTemplateColumns:"auto 1fr auto auto",padding:"9px 16px",gap:12}}>
+        {["","Ação","Normal","🌍 Seleção"].map((h,i)=><div key={i} style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.85)",fontWeight:700,letterSpacing:1}}>{h}</div>)}
+      </div>
+      {[
+        ["⚽","Gol normal / pé direito","2🥜","3🥜"],
+        ["🦶","Gol pé esquerdo","3🥜","5🥜"],
+        ["🗣️","Gol de cabeça","3🥜","5🥜"],
+        ["🌟","Gol de fora da área","4🥜","6🥜"],
+        ["🎩","Gol de cobertura","5🥜","8🥜"],
+        ["🔔","Gol no travessão","5🥜","8🥜"],
+        ["🎯","Gol de falta","4🥜","6🥜"],
+        ["🚩","Gol de escanteio","3🥜","5🥜"],
+        ["🅰️","Assistência","1🥜","2🥜"],
+        ["⚽⚽","2 gols na partida","Bônus +2","Bônus +3"],
+        ["🔥","Hat-trick","Bônus +3","Bônus +5"],
+        ["🎩","Hat-trick assistências","Bônus +3","Bônus +5"],
+        ["🏆","Gol em final","Extra +2","Extra +3"],
+        ["🥇","Vitória em final","Extra +1","Extra +1"],
+        ["⭐","Sinergia aposta+ação","+1-3🥜","—"],
+        ["🟨","Cartão amarelo","-1🥜 (quitado se marcar gol)","—"],
+        ["🟥","Cartão vermelho","-3🥜 (quitado se marcar gol)","—"],
+      ].map(([ico,l,n,s],i)=>(
+        <div key={i} style={{display:"grid",gridTemplateColumns:"auto 1fr auto auto",padding:"10px 16px",gap:12,background:i%2===0?"#fff":C.blueLight,borderBottom:`1px solid ${C.border}`,alignItems:"center"}}>
+          <div style={{fontSize:"1rem"}}>{ico}</div>
+          <div style={{fontSize:"0.83rem",color:C.text,fontWeight:500}}>{l}</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.blue,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{n}</div>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"0.93rem",color:C.green,letterSpacing:1,textAlign:"right",minWidth:90,whiteSpace:"nowrap"}}>{s}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BetCard({bet,settleBet}){
+  const sc={pending:{bg:C.blueLight,col:C.blue,lbl:"Pendente"},won:{bg:C.greenL,col:C.green,lbl:"✅ Ganhou"},lost:{bg:C.liveL,col:C.accent,lbl:"❌ Perdeu"}};
+  const s=sc[bet.status];
+  return(
+    <div style={{background:"rgba(255,255,255,0.65)",border:"1px solid rgba(255,255,255,0.5)",borderRadius:14,padding:"13px 16px",backdropFilter:"blur(10px)",border:"1px solid rgba(255,255,255,0.5)"}}>
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:"0.72rem",color:C.textSoft}}>{bet.date}</span>
+        <span style={{background:s.bg,color:s.col,fontSize:"0.72rem",fontWeight:700,padding:"2px 8px",borderRadius:20}}>{s.lbl}</span>
+      </div>
+      {bet.bets.map((b,i)=>(
+        <div key={i} style={{fontSize:"0.8rem",marginBottom:2}}>
+          <strong>{b.myTeam} × {b.opponent}</strong><span style={{color:C.textMid}}> — {b.label}</span>
+          <span style={{color:C.blue,fontWeight:700,marginLeft:5}}>@ {b.odd}</span>
+        </div>
+      ))}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
+        <div style={{fontSize:"0.79rem"}}>
+          R$ <strong>{bet.stake.toFixed(2)}</strong>
+          <span style={{color:C.textSoft,margin:"0 4px"}}>·</span>
+          Odd <strong>{bet.totalOdd}</strong>
+          <span style={{color:C.textSoft,margin:"0 4px"}}>·</span>
+          <span style={{color:C.green}}>R$ {bet.potential}</span>
+        </div>
+        {bet.status==="pending"&&(
+          <div style={{display:"flex",gap:6}}>
+            <button onClick={()=>settleBet(bet.id,true)} style={{background:C.greenL,border:"1px solid #86efac",color:C.green,borderRadius:6,padding:"4px 11px",fontWeight:700,fontSize:"0.74rem"}}>Ganhou</button>
+            <button onClick={()=>settleBet(bet.id,false)} style={{background:C.liveL,border:"1px solid #fca5a5",color:C.accent,borderRadius:6,padding:"4px 11px",fontWeight:700,fontSize:"0.74rem"}}>Perdeu</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Modal({children,onClose,title,wide}){
+  return(
+    <div style={{position:"fixed",inset:0,background:"rgba(3,60,100,0.45)",backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{
+        background:"rgba(255,255,255,0.82)",backdropFilter:"blur(24px) saturate(1.6)",
+        borderRadius:20,padding:28,width:wide?"min(580px,95vw)":"min(430px,95vw)",
+        boxShadow:"0 24px 64px rgba(3,105,161,0.22), 0 1px 0 rgba(255,255,255,0.9) inset",
+        border:"1px solid rgba(255,255,255,0.65)",
+        animation:"sd 0.22s ease",maxHeight:"92vh",overflowY:"auto"
+      }}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+          <div style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1.1rem",letterSpacing:3,color:C.blueDark,fontWeight:700}}>{title}</div>
+          <button onClick={onClose} style={{background:"rgba(14,165,233,0.1)",border:"1px solid rgba(14,165,233,0.2)",color:C.textSoft,fontSize:"1rem",lineHeight:1,borderRadius:8,padding:"4px 8px"}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+function Chip({children,color,bg}){
+  return <span style={{
+    background:bg||"rgba(14,165,233,0.12)",color:color||C.blue,
+    fontSize:"0.67rem",fontWeight:800,padding:"3px 10px",borderRadius:20,
+    whiteSpace:"nowrap",border:`1px solid ${(color||C.blue)}30`,
+    boxShadow:"0 1px 0 rgba(255,255,255,0.6) inset",
+  }}>{children}</span>;
+}
+function TogChip({active,onClick,children}){
+  return <button onClick={onClick} style={{
+    background:active?"linear-gradient(180deg,#38bdf8,#0284c7)":"rgba(255,255,255,0.6)",
+    color:active?"#fff":C.textMid,
+    border:active?"1px solid #38bdf8":"1px solid rgba(14,165,233,0.25)",
+    borderRadius:20,padding:"6px 14px",fontWeight:700,fontSize:"0.8rem",
+    boxShadow:active?"0 4px 12px rgba(14,165,233,0.35),0 1px 0 rgba(255,255,255,0.3) inset":"0 1px 0 rgba(255,255,255,0.8) inset",
+    backdropFilter:"blur(8px)",
+  }}>{children}</button>;
+}
+function Empty({children}){
+  return <div style={{
+    textAlign:"center",padding:"28px",color:C.textSoft,fontSize:"0.86rem",
+    background:"rgba(255,255,255,0.5)",backdropFilter:"blur(12px)",
+    borderRadius:14,border:"1px dashed rgba(14,165,233,0.3)",
+    fontWeight:600,
+  }}>{children}</div>;
+}
+
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App/>);
+    setTimeout(()=>{
+      const l=document.getElementById('loading');
+      if(l){l.style.opacity='0';setTimeout(()=>l.remove(),500);}
+    },1000);
+  </script>
+</body>
+</html>
